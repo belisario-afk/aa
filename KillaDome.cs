@@ -408,13 +408,14 @@ namespace Oxide.Plugins
         public class ArmorItem
         {
             public string Name { get; set; }
+            public string DisplayName => Name; // Alias for consistency
             public string ItemShortname { get; set; }
             public string Slot { get; set; } // "head", "chest", "legs", "hands", "feet"
             public string SkinId { get; set; } = "0";
             public string ImageUrl { get; set; }
             public int Cost { get; set; } = 300;
             public string Rarity { get; set; } = "Common";
-            public string Tag { get; set; } = "";
+            public string Tag { get; set} = "";
         }
         
         #endregion
@@ -1033,6 +1034,60 @@ namespace Oxide.Plugins
             }
         }
         
+        [ConsoleCommand("killadome.purchase.armor")]
+        private void CmdPurchaseArmor(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null || !arg.HasArgs(2)) return;
+            
+            if (!_antiExploit.CheckRateLimit(player.userID))
+            {
+                SendReply(player, "Please slow down!");
+                return;
+            }
+            
+            string itemShortname = arg.Args[0];
+            if (!int.TryParse(arg.Args[1], out int cost))
+            {
+                SendReply(player, "Invalid cost");
+                return;
+            }
+            
+            var session = GetSession(player.userID);
+            if (session == null)
+            {
+                // Create session if it doesn't exist
+                var profile = _saveManager.LoadPlayerProfile(player.userID);
+                session = new PlayerSession(player, profile);
+                _activeSessions[player.userID] = session;
+            }
+            
+            // Check if already owned
+            if (session.Profile.OwnedArmor.Contains(itemShortname))
+            {
+                SendReply(player, "You already own this armor piece!");
+                return;
+            }
+            
+            if (session.Profile.Tokens < cost)
+            {
+                SendReply(player, $"Insufficient tokens! You need {cost} but only have {session.Profile.Tokens}.");
+                return;
+            }
+            
+            // Deduct cost and add armor
+            session.Profile.Tokens -= cost;
+            session.Profile.OwnedArmor.Add(itemShortname);
+            
+            // Find armor name for message
+            var armor = _outfitConfig.Armors.FirstOrDefault(a => a.ItemShortname == itemShortname);
+            string armorName = armor != null ? armor.DisplayName : itemShortname;
+            
+            SendReply(player, $"Successfully purchased {armorName}!");
+            _saveManager.SavePlayerProfile(session.Profile);
+            _lobbyUI.ShowLobbyUIWithTab(player, "store");
+        }
+        
         [ConsoleCommand("killadome.applyskin")]
         private void CmdApplySkin(ConsoleSystem.Arg arg)
         {
@@ -1229,6 +1284,124 @@ namespace Oxide.Plugins
             }
             
             _lobbyUI.ShowLobbyUIWithTab(player, "store");
+        }
+        
+        [ConsoleCommand("killadome.loadouttab")]
+        private void CmdLoadoutTab(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null || !arg.HasArgs(1)) return;
+            
+            string tab = arg.Args[0].ToLower(); // "weapons" or "outfit"
+            if (tab != "weapons" && tab != "outfit") return;
+            
+            var session = GetSession(player.userID);
+            if (session == null) return;
+            
+            session.SelectedLoadoutTab = tab;
+            _lobbyUI.ShowLobbyUIWithTab(player, "loadouts");
+        }
+        
+        [ConsoleCommand("killadome.armor.next")]
+        private void CmdArmorNext(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null || !arg.HasArgs(1)) return;
+            
+            string slot = arg.Args[0].ToLower(); // "head", "chest", "legs", "hands", "feet"
+            
+            var session = GetSession(player.userID);
+            if (session == null || session.Profile.Loadouts.Count == 0) return;
+            
+            var loadout = session.Profile.Loadouts[0];
+            
+            // Get owned armor for this slot
+            var ownedArmor = _outfitConfig.Armors
+                .Where(a => a.Slot == slot && session.Profile.OwnedArmor.Contains(a.ItemShortname))
+                .ToArray();
+            
+            if (ownedArmor.Length == 0) return;
+            
+            // Get current armor shortname
+            string currentArmorShortname = slot switch
+            {
+                "head" => loadout.ArmorHead,
+                "chest" => loadout.ArmorChest,
+                "legs" => loadout.ArmorLegs,
+                "hands" => loadout.ArmorHands,
+                "feet" => loadout.ArmorFeet,
+                _ => null
+            };
+            
+            // Find current index and move to next
+            int currentIndex = Array.FindIndex(ownedArmor, a => a.ItemShortname == currentArmorShortname);
+            if (currentIndex == -1) currentIndex = 0;
+            
+            int nextIndex = (currentIndex + 1) % ownedArmor.Length;
+            string nextArmor = ownedArmor[nextIndex].ItemShortname;
+            
+            // Update loadout
+            switch (slot)
+            {
+                case "head": loadout.ArmorHead = nextArmor; break;
+                case "chest": loadout.ArmorChest = nextArmor; break;
+                case "legs": loadout.ArmorLegs = nextArmor; break;
+                case "hands": loadout.ArmorHands = nextArmor; break;
+                case "feet": loadout.ArmorFeet = nextArmor; break;
+            }
+            
+            _lobbyUI.ShowLobbyUIWithTab(player, "loadouts");
+        }
+        
+        [ConsoleCommand("killadome.armor.prev")]
+        private void CmdArmorPrev(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null || !arg.HasArgs(1)) return;
+            
+            string slot = arg.Args[0].ToLower(); // "head", "chest", "legs", "hands", "feet"
+            
+            var session = GetSession(player.userID);
+            if (session == null || session.Profile.Loadouts.Count == 0) return;
+            
+            var loadout = session.Profile.Loadouts[0];
+            
+            // Get owned armor for this slot
+            var ownedArmor = _outfitConfig.Armors
+                .Where(a => a.Slot == slot && session.Profile.OwnedArmor.Contains(a.ItemShortname))
+                .ToArray();
+            
+            if (ownedArmor.Length == 0) return;
+            
+            // Get current armor shortname
+            string currentArmorShortname = slot switch
+            {
+                "head" => loadout.ArmorHead,
+                "chest" => loadout.ArmorChest,
+                "legs" => loadout.ArmorLegs,
+                "hands" => loadout.ArmorHands,
+                "feet" => loadout.ArmorFeet,
+                _ => null
+            };
+            
+            // Find current index and move to prev
+            int currentIndex = Array.FindIndex(ownedArmor, a => a.ItemShortname == currentArmorShortname);
+            if (currentIndex == -1) currentIndex = 0;
+            
+            int prevIndex = (currentIndex - 1 + ownedArmor.Length) % ownedArmor.Length;
+            string prevArmor = ownedArmor[prevIndex].ItemShortname;
+            
+            // Update loadout
+            switch (slot)
+            {
+                case "head": loadout.ArmorHead = prevArmor; break;
+                case "chest": loadout.ArmorChest = prevArmor; break;
+                case "legs": loadout.ArmorLegs = prevArmor; break;
+                case "hands": loadout.ArmorHands = prevArmor; break;
+                case "feet": loadout.ArmorFeet = prevArmor; break;
+            }
+            
+            _lobbyUI.ShowLobbyUIWithTab(player, "loadouts");
         }
         
         [ChatCommand("dice")]
@@ -1724,11 +1897,52 @@ namespace Oxide.Plugins
                     RectTransform = { AnchorMin = "0 0.05", AnchorMax = "1 1" }
                 }, "LoadoutHeader");
                 
-                // === WEAPON SELECTION === (20% height, optimized)
+                // === SUB-TABS === (Weapons vs Outfit Editor)
+                string selectedLoadoutTab = session.SelectedLoadoutTab ?? "weapons";
+                
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.06 0.06 0.08 0.9" },
-                    RectTransform = { AnchorMin = "0.05 0.68", AnchorMax = "0.95 0.88" }
+                    RectTransform = { AnchorMin = "0.05 0.84", AnchorMax = "0.95 0.88" }
+                }, UI_TAB_CONTAINER, "LoadoutSubTabs");
+                
+                // Weapons Tab
+                bool isWeaponsActive = selectedLoadoutTab == "weapons";
+                container.Add(new CuiButton
+                {
+                    Button = { Command = "killadome.loadouttab weapons", Color = isWeaponsActive ? "0.2 0.6 0.8 0.9" : "0.12 0.12 0.16 0.9" },
+                    Text = { Text = "⚔ WEAPONS", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = isWeaponsActive ? "1 1 1 1" : "0.6 0.6 0.6 1" },
+                    RectTransform = { AnchorMin = "0.02 0.1", AnchorMax = "0.35 0.9" }
+                }, "LoadoutSubTabs");
+                
+                // Outfit Tab
+                bool isOutfitActive = selectedLoadoutTab == "outfit";
+                container.Add(new CuiButton
+                {
+                    Button = { Command = "killadome.loadouttab outfit", Color = isOutfitActive ? "0.2 0.6 0.8 0.9" : "0.12 0.12 0.16 0.9" },
+                    Text = { Text = "👕 OUTFIT", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = isOutfitActive ? "1 1 1 1" : "0.6 0.6 0.6 1" },
+                    RectTransform = { AnchorMin = "0.37 0.1", AnchorMax = "0.70 0.9" }
+                }, "LoadoutSubTabs");
+                
+                // Show appropriate content based on selected tab
+                if (selectedLoadoutTab == "outfit")
+                {
+                    ShowOutfitEditorContent(container, player, session, loadout);
+                }
+                else
+                {
+                    ShowWeaponsEditorContent(container, player, session, loadout, editingSlot, currentWeapon);
+                }
+            }
+            
+            private void ShowWeaponsEditorContent(CuiElementContainer container, BasePlayer player, PlayerSession session, Loadout loadout, string editingSlot, string currentWeapon)
+            {
+                
+                // === WEAPON SELECTION === (16% height, adjusted for sub-tabs)
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "0.06 0.06 0.08 0.9" },
+                    RectTransform = { AnchorMin = "0.05 0.66", AnchorMax = "0.95 0.82" }
                 }, UI_TAB_CONTAINER, "WeaponSelection");
                 
                 container.Add(new CuiLabel
@@ -1863,11 +2077,11 @@ namespace Oxide.Plugins
                     RectTransform = { AnchorMin = "0.53 0.06", AnchorMax = "0.95 0.22" }
                 }, "SecondaryBox");
                 
-                // === EDITOR SECTION === (66% height)
+                // === EDITOR SECTION === (58% height, adjusted)
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.06 0.06 0.08 0.9" },
-                    RectTransform = { AnchorMin = "0.05 0.08", AnchorMax = "0.95 0.66" }
+                    RectTransform = { AnchorMin = "0.05 0.06", AnchorMax = "0.95 0.64" }
                 }, UI_TAB_CONTAINER, "EditorArea");
                 
                 container.Add(new CuiLabel
@@ -2176,6 +2390,163 @@ namespace Oxide.Plugins
                     Text = { Text = "VIC", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "0.8 0.9 1.0 0.9" },
                     RectTransform = { AnchorMin = "0.05 0.15", AnchorMax = "0.95 0.85" }
                 }, "LoadoutFooter");
+            }
+            
+            private void ShowOutfitEditorContent(CuiElementContainer container, BasePlayer player, PlayerSession session, Loadout loadout)
+            {
+                // === OUTFIT CUSTOMIZATION SECTION === (76% height)
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "0.06 0.06 0.08 0.9" },
+                    RectTransform = { AnchorMin = "0.05 0.06", AnchorMax = "0.95 0.82" }
+                }, UI_TAB_CONTAINER, "OutfitEditorArea");
+                
+                container.Add(new CuiLabel
+                {
+                    Text = { Text = "CUSTOMIZE YOUR OUTFIT", FontSize = 14, Align = TextAnchor.UpperCenter, Color = "0.9 0.8 1.0 1" },
+                    RectTransform = { AnchorMin = "0.02 0.96", AnchorMax = "0.98 1" }
+                }, "OutfitEditorArea");
+                
+                // 5 Armor Slots in vertical tower (5 columns)
+                string[] armorSlots = { "head", "chest", "legs", "hands", "feet" };
+                string[] slotLabels = { "HEAD", "CHEST", "LEGS", "HANDS", "FEET" };
+                string[] slotColors = { "1.0 0.3 0.3", "1.0 0.8 0.2", "0.3 0.6 1.0", "0.7 0.4 1.0", "0.4 1.0 0.5" };
+                
+                for (int i = 0; i < armorSlots.Length; i++)
+                {
+                    string slot = armorSlots[i];
+                    string slotLabel = slotLabels[i];
+                    string slotColor = slotColors[i];
+                    
+                    float xMin = 0.02f + (i * 0.195f);
+                    float xMax = xMin + 0.185f;
+                    
+                    container.Add(new CuiPanel
+                    {
+                        Image = { Color = "0.10 0.10 0.14 0.95" },
+                        RectTransform = { AnchorMin = $"{xMin} 0.02", AnchorMax = $"{xMax} 0.93" }
+                    }, "OutfitEditorArea", $"ArmorSlot_{slot}");
+                    
+                    // Colored accent bar
+                    container.Add(new CuiPanel
+                    {
+                        Image = { Color = $"{slotColor} 0.6" },
+                        RectTransform = { AnchorMin = "0 0", AnchorMax = "0.02 1" }
+                    }, $"ArmorSlot_{slot}");
+                    
+                    // Slot label
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = slotLabel, FontSize = 11, Align = TextAnchor.UpperCenter, Color = $"{slotColor} 1" },
+                        RectTransform = { AnchorMin = "0.05 0.93", AnchorMax = "0.95 0.99" }
+                    }, $"ArmorSlot_{slot}");
+                    
+                    // Get owned armor for this slot
+                    var ownedArmor = _plugin._outfitConfig.Armors
+                        .Where(a => a.Slot == slot && session.Profile.OwnedArmor.Contains(a.ItemShortname))
+                        .ToArray();
+                    
+                    // Get current armor shortname from loadout
+                    string currentArmorShortname = slot switch
+                    {
+                        "head" => loadout.ArmorHead,
+                        "chest" => loadout.ArmorChest,
+                        "legs" => loadout.ArmorLegs,
+                        "hands" => loadout.ArmorHands,
+                        "feet" => loadout.ArmorFeet,
+                        _ => null
+                    };
+                    
+                    if (ownedArmor.Length == 0)
+                    {
+                        // No armor owned in this slot
+                        container.Add(new CuiLabel
+                        {
+                            Text = { Text = $"No {slot}\narmor owned", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = "0.5 0.5 0.5 1" },
+                            RectTransform = { AnchorMin = "0.05 0.40", AnchorMax = "0.95 0.60" }
+                        }, $"ArmorSlot_{slot}");
+                        
+                        container.Add(new CuiLabel
+                        {
+                            Text = { Text = "Purchase in\nOutfit Store", FontSize = 8, Align = TextAnchor.MiddleCenter, Color = "0.4 0.6 0.8 1" },
+                            RectTransform = { AnchorMin = "0.05 0.25", AnchorMax = "0.95 0.38" }
+                        }, $"ArmorSlot_{slot}");
+                    }
+                    else
+                    {
+                        // Find current armor in owned list
+                        var currentArmor = ownedArmor.FirstOrDefault(a => a.ItemShortname == currentArmorShortname);
+                        if (currentArmor == null) currentArmor = ownedArmor[0]; // Default to first owned
+                        
+                        // Armor image
+                        container.Add(new CuiElement
+                        {
+                            Parent = $"ArmorSlot_{slot}",
+                            Components =
+                            {
+                                new CuiRawImageComponent { Png = (string)_plugin.ImageLibrary?.Call("GetImage", currentArmor.ImageUrl) },
+                                new CuiRectTransformComponent { AnchorMin = "0.15 0.45", AnchorMax = "0.85 0.85" }
+                            }
+                        });
+                        
+                        // Armor name
+                        container.Add(new CuiPanel
+                        {
+                            Image = { Color = "0.08 0.08 0.12 0.9" },
+                            RectTransform = { AnchorMin = "0.05 0.30", AnchorMax = "0.95 0.42" }
+                        }, $"ArmorSlot_{slot}", $"ArmorNameBg_{slot}");
+                        
+                        container.Add(new CuiLabel
+                        {
+                            Text = { Text = currentArmor.DisplayName, FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+                            RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
+                        }, $"ArmorNameBg_{slot}");
+                        
+                        // Status indicator
+                        container.Add(new CuiLabel
+                        {
+                            Text = { Text = $"EQUIPPED", FontSize = 7, Align = TextAnchor.MiddleCenter, Color = "0.4 1.0 0.4 1" },
+                            RectTransform = { AnchorMin = "0.05 0.22", AnchorMax = "0.95 0.28" }
+                        }, $"ArmorSlot_{slot}");
+                        
+                        // PREV button
+                        container.Add(new CuiButton
+                        {
+                            Button = { Command = $"killadome.armor.prev {slot}", Color = "0.2 0.5 0.7 0.9" },
+                            Text = { Text = "<", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+                            RectTransform = { AnchorMin = "0.05 0.05", AnchorMax = "0.47 0.18" }
+                        }, $"ArmorSlot_{slot}");
+                        
+                        // NEXT button
+                        container.Add(new CuiButton
+                        {
+                            Button = { Command = $"killadome.armor.next {slot}", Color = "0.2 0.5 0.7 0.9" },
+                            Text = { Text = ">", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+                            RectTransform = { AnchorMin = "0.53 0.05", AnchorMax = "0.95 0.18" }
+                        }, $"ArmorSlot_{slot}");
+                        
+                        // Item count indicator
+                        int currentIndex = Array.IndexOf(ownedArmor, currentArmor);
+                        container.Add(new CuiLabel
+                        {
+                            Text = { Text = $"{currentIndex + 1}/{ownedArmor.Length}", FontSize = 7, Align = TextAnchor.MiddleCenter, Color = "0.7 0.7 0.7 1" },
+                            RectTransform = { AnchorMin = "0.05 0.01", AnchorMax = "0.95 0.04" }
+                        }, $"ArmorSlot_{slot}");
+                    }
+                }
+                
+                // === FOOTER === (4% height)
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "0.08 0.08 0.12 0.9" },
+                    RectTransform = { AnchorMin = "0.05 0.01", AnchorMax = "0.95 0.04" }
+                }, UI_TAB_CONTAINER, "OutfitFooter");
+                
+                container.Add(new CuiLabel
+                {
+                    Text = { Text = "Cycle through owned armor | Purchase more items in Outfit Store", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "0.8 0.8 0.8 1" },
+                    RectTransform = { AnchorMin = "0.02 0", AnchorMax = "0.98 1" }
+                }, "OutfitFooter");
             }
             
             private void ShowStoreTab(CuiElementContainer container, BasePlayer player)
