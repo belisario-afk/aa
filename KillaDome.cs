@@ -584,10 +584,12 @@ namespace Oxide.Plugins
         
         private void OnPlayerConnected(BasePlayer player)
         {
-            if (player == null) return;
+            if (player == null || _saveManager == null || _lobbyUI == null) return;
             
             NextTick(() =>
             {
+                if (player == null || !player.IsConnected) return;
+                
                 var profile = _saveManager.LoadPlayerProfile(player.userID);
                 var session = new PlayerSession(player, profile);
                 _activeSessions[player.userID] = session;
@@ -596,7 +598,13 @@ namespace Oxide.Plugins
                 TeleportToLobby(player);
                 
                 // Show lobby UI
-                timer.Once(1f, () => _lobbyUI.ShowLobbyUI(player));
+                timer.Once(1f, () =>
+                {
+                    if (player != null && player.IsConnected)
+                    {
+                        _lobbyUI.ShowLobbyUI(player);
+                    }
+                });
                 
                 LogDebug($"Player {player.displayName} ({player.userID}) connected");
             });
@@ -610,7 +618,7 @@ namespace Oxide.Plugins
             
             if (_activeSessions.TryGetValue(player.userID, out var session))
             {
-                _saveManager.SavePlayerProfile(session.Profile);
+                _saveManager?.SavePlayerProfile(session.Profile);
                 _activeSessions.Remove(player.userID);
             }
             
@@ -619,10 +627,10 @@ namespace Oxide.Plugins
         
         private void OnEntityDeath(BasePlayer victim, HitInfo info)
         {
-            if (victim == null) return;
+            if (victim == null || _tokenEconomy == null || _telemetry == null) return;
             
             var attacker = info?.InitiatorPlayer;
-            if (attacker != null && attacker != victim)
+            if (attacker != null && attacker != victim && attacker.IsConnected)
             {
                 // Award tokens for kill
                 _tokenEconomy.AwardTokens(attacker.userID, _config.TokensPerKill);
@@ -811,11 +819,16 @@ namespace Oxide.Plugins
         
         private void AutoSaveAllPlayers()
         {
+            if (_saveManager == null) return;
+            
             int saved = 0;
             foreach (var session in _activeSessions.Values)
             {
-                _saveManager.SavePlayerProfile(session.Profile);
-                saved++;
+                if (session?.Profile != null)
+                {
+                    _saveManager.SavePlayerProfile(session.Profile);
+                    saved++;
+                }
             }
             LogDebug($"Auto-saved {saved} player profiles");
         }
