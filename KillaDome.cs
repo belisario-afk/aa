@@ -1914,11 +1914,18 @@ namespace Oxide.Plugins
                 }, tokenPanelName);
                 
                 // ===== GUN SKINS SECTION =====
-                var gunSkins = new[]
+                // Now dynamically loads from centralized GunConfig!
+                var gunSkinsFromConfig = _plugin._gunConfig.Skins.Select((skin, index) => new
                 {
-                    new { Name = "AK-47 Neon Skin", Cost = 500, Id = "3102802323", ImageId = "ak47_neon", Tag = "POPULAR", Rarity = "Epic" },
-                    new { Name = "AK-47 Classic Skin", Cost = 400, Id = "skin_ak47_neon", ImageId = "ak47_classic", Tag = "NEW", Rarity = "Rare" }
-                };
+                    Name = skin.Name,
+                    Cost = index < 2 ? 400 + (index * 100) : 300 + (index * 50), // Dynamic pricing based on order
+                    Id = skin.SkinId,
+                    ImageId = skin.ImageUrl, // Using ImageUrl from centralized config
+                    Tag = index == 0 ? "POPULAR" : (index == 1 ? "NEW" : ""),
+                    Rarity = index % 2 == 0 ? "Epic" : "Rare"
+                }).ToArray();
+                
+                var gunSkins = gunSkinsFromConfig;
                 
                 // Section background with gradient
                 container.Add(new CuiPanel
