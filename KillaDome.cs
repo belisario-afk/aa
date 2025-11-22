@@ -699,13 +699,17 @@ namespace Oxide.Plugins
             
             // Get weapon info from centralized config
             string itemName = "rifle.ak"; // Default fallback
-            if (_gunConfig.Guns.TryGetValue(weaponName, out var gunDef))
+            if (_gunConfig?.Guns != null && _gunConfig.Guns.TryGetValue(weaponName, out var gunDef))
             {
                 itemName = gunDef.RustItemShortname;
             }
             
             var item = ItemManager.CreateByName(itemName, 1);
-            if (item == null) return;
+            if (item == null)
+            {
+                LogDebug($"Failed to create weapon: {itemName}");
+                return;
+            }
             
             // Apply skin if exists
             if (skins != null && skins.TryGetValue(weaponName, out string skinId))
@@ -721,7 +725,7 @@ namespace Oxide.Plugins
             if (attachments != null && attachments.Count > 0)
             {
                 var heldEntity = item.GetHeldEntity() as BaseProjectile;
-                if (heldEntity != null)
+                if (heldEntity != null && item.contents != null)
                 {
                     foreach (var attachmentEntry in attachments)
                     {
@@ -732,7 +736,10 @@ namespace Oxide.Plugins
                             if (attachmentItem != null)
                             {
                                 // Add attachment to weapon's content container
-                                attachmentItem.MoveToContainer(item.contents);
+                                if (!attachmentItem.MoveToContainer(item.contents))
+                                {
+                                    attachmentItem.Remove(); // Clean up if can't add
+                                }
                             }
                         }
                     }
@@ -740,7 +747,12 @@ namespace Oxide.Plugins
             }
             
             // Give item to player
-            player.inventory.GiveItem(item);
+            if (!player.inventory.GiveItem(item))
+            {
+                LogDebug($"Failed to give weapon {itemName} to {player.displayName} - inventory full?");
+                item.Remove(); // Clean up item if can't give
+                return;
+            }
             
             // If item was given to belt, ensure visual update
             var heldItem = item.GetHeldEntity();
