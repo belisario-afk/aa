@@ -1348,6 +1348,7 @@ namespace Oxide.Plugins
             public int GunsStorePage { get; set; } // Current page for gun store
             public int SkinsStorePage { get; set; } // Current page for skins store
             public DateTime LastDiceGame { get; set; } // Cooldown for dice game
+            public string SelectedLoadoutTab { get; set; } // "weapons" or "outfit"
             
             internal PlayerSession(BasePlayer player, PlayerProfile profile)
             {
@@ -1359,6 +1360,7 @@ namespace Oxide.Plugins
                 SelectedStoreCategory = "guns"; // Default to guns store
                 GunsStorePage = 0; // Start at first page
                 SkinsStorePage = 0; // Start at first page
+                SelectedLoadoutTab = "weapons"; // Default to weapons tab
             }
         }
         
@@ -1369,6 +1371,7 @@ namespace Oxide.Plugins
             public Dictionary<string, int> WeaponLevels { get; set; }
             public Dictionary<string, int> AttachmentLevels { get; set; }
             public List<string> OwnedSkins { get; set; }
+            public List<string> OwnedArmor { get; set; } // List of owned armor shortnames
             public int Tokens { get; set; }
             public bool IsVIP { get; set; }
             public DateTime LastUpdated { get; set; }
@@ -1382,6 +1385,7 @@ namespace Oxide.Plugins
                 WeaponLevels = new Dictionary<string, int>();
                 AttachmentLevels = new Dictionary<string, int>();
                 OwnedSkins = new List<string>();
+                OwnedArmor = new List<string>();
             }
             
             public PlayerProfile(ulong steamId, int startingTokens) : this()
@@ -1413,6 +1417,12 @@ namespace Oxide.Plugins
             public string Lethal { get; set; }
             public string Tactical { get; set; }
             public List<string> Perks { get; set; }
+            // Outfit/Armor slots
+            public string ArmorHead { get; set; }
+            public string ArmorChest { get; set; }
+            public string ArmorLegs { get; set; }
+            public string ArmorHands { get; set; }
+            public string ArmorFeet { get; set; }
             
             public Loadout()
             {
