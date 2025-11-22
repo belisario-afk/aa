@@ -89,26 +89,19 @@ namespace Oxide.Plugins
                     RustItemShortname = "rifle.ak",
                     ImageUrl = "https://i.imgur.com/YourAK47Image.png"
                 },
-                ["m249"] = new GunDefinition
-                {
-                    Id = "m249",
-                    DisplayName = "M249",
-                    RustItemShortname = "lmg.m249",
-                    ImageUrl = "https://i.imgur.com/YourM249Image.png"
-                },
-                ["pistol"] = new GunDefinition
-                {
-                    Id = "pistol",
-                    DisplayName = "Semi-Automatic Pistol",
-                    RustItemShortname = "pistol.semiauto",
-                    ImageUrl = "https://i.imgur.com/YourPistolImage.png"
-                },
                 ["lr300"] = new GunDefinition
                 {
                     Id = "lr300",
                     DisplayName = "LR-300",
                     RustItemShortname = "rifle.lr300",
                     ImageUrl = "https://i.imgur.com/YourLR300Image.png"
+                },
+                ["m249"] = new GunDefinition
+                {
+                    Id = "m249",
+                    DisplayName = "M249",
+                    RustItemShortname = "lmg.m249",
+                    ImageUrl = "https://i.imgur.com/YourM249Image.png"
                 },
                 ["mp5"] = new GunDefinition
                 {
@@ -117,13 +110,47 @@ namespace Oxide.Plugins
                     RustItemShortname = "smg.mp5",
                     ImageUrl = "https://i.imgur.com/YourMP5Image.png"
                 },
-                // Example: Add a new gun here and it will automatically appear in Loadout Tab!
                 ["thompson"] = new GunDefinition
                 {
                     Id = "thompson",
                     DisplayName = "Thompson",
                     RustItemShortname = "smg.thompson",
                     ImageUrl = "https://i.imgur.com/YourThompsonImage.png"
+                },
+                ["python"] = new GunDefinition
+                {
+                    Id = "python",
+                    DisplayName = "Python Revolver",
+                    RustItemShortname = "pistol.python",
+                    ImageUrl = "https://i.imgur.com/YourPythonImage.png"
+                },
+                ["bolt"] = new GunDefinition
+                {
+                    Id = "bolt",
+                    DisplayName = "Bolt Action Rifle",
+                    RustItemShortname = "rifle.bolt",
+                    ImageUrl = "https://i.imgur.com/YourBoltImage.png"
+                },
+                ["sarpistol"] = new GunDefinition
+                {
+                    Id = "sarpistol",
+                    DisplayName = "Semi-Auto Pistol",
+                    RustItemShortname = "pistol.semiauto",
+                    ImageUrl = "https://i.imgur.com/YourSARImage.png"
+                },
+                ["custom"] = new GunDefinition
+                {
+                    Id = "custom",
+                    DisplayName = "Custom SMG",
+                    RustItemShortname = "smg.2",
+                    ImageUrl = "https://i.imgur.com/YourCustomImage.png"
+                },
+                ["m39"] = new GunDefinition
+                {
+                    Id = "m39",
+                    DisplayName = "M39 Rifle",
+                    RustItemShortname = "rifle.m39",
+                    ImageUrl = "https://i.imgur.com/YourM39Image.png"
                 }
             };
             
@@ -142,6 +169,16 @@ namespace Oxide.Plugins
                 // AK-47 Skins
                 new SkinDefinition
                 {
+                    Name = "AK-47 Tempered",
+                    SkinId = "3602286295",
+                    WeaponId = "ak47",
+                    ImageUrl = "https://i.imgur.com/YourAK47TemperedSkin.png",
+                    Cost = 650,
+                    Tag = "NEW",
+                    Rarity = "Legendary"
+                },
+                new SkinDefinition
+                {
                     Name = "AK-47 Neon",
                     SkinId = "3102802323",
                     WeaponId = "ak47",
@@ -157,7 +194,7 @@ namespace Oxide.Plugins
                     WeaponId = "ak47",
                     ImageUrl = "https://i.imgur.com/YourAK47ClassicSkin.png",
                     Cost = 400,
-                    Tag = "NEW",
+                    Tag = "",
                     Rarity = "Rare"
                 },
                 
@@ -1560,7 +1597,7 @@ namespace Oxide.Plugins
                     Components =
                     {
                         new CuiRawImageComponent { Png = (string)_plugin.ImageLibrary?.Call("GetImage", primaryImageUrl) },
-                        new CuiRectTransformComponent { AnchorMin = "0.25 0.30", AnchorMax = "0.75 0.70" }
+                        new CuiRectTransformComponent { AnchorMin = "0.25 0.35", AnchorMax = "0.75 0.80" }
                     }
                 });
                 
@@ -1623,7 +1660,7 @@ namespace Oxide.Plugins
                     Components =
                     {
                         new CuiRawImageComponent { Png = (string)_plugin.ImageLibrary?.Call("GetImage", secondaryImageUrl) },
-                        new CuiRectTransformComponent { AnchorMin = "0.25 0.30", AnchorMax = "0.75 0.70" }
+                        new CuiRectTransformComponent { AnchorMin = "0.25 0.35", AnchorMax = "0.75 0.80" }
                     }
                 });
                 
