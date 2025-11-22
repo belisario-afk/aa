@@ -1011,14 +1011,24 @@ namespace Oxide.Plugins
             
             if (category == "guns")
             {
-                if (direction == "next")
+                // Calculate max pages to prevent overflow
+                int itemsPerPage = 6;
+                int totalItems = _gunConfig.Guns.Count;
+                int maxPage = (int)Math.Ceiling((double)totalItems / itemsPerPage) - 1;
+                
+                if (direction == "next" && session.GunsStorePage < maxPage)
                     session.GunsStorePage++;
                 else if (direction == "prev" && session.GunsStorePage > 0)
                     session.GunsStorePage--;
             }
             else if (category == "skins")
             {
-                if (direction == "next")
+                // Calculate max pages to prevent overflow
+                int itemsPerPage = 12;
+                int totalItems = _gunConfig.Skins.Count + 3; // weapon skins + outfit skins
+                int maxPage = (int)Math.Ceiling((double)totalItems / itemsPerPage) - 1;
+                
+                if (direction == "next" && session.SkinsStorePage < maxPage)
                     session.SkinsStorePage++;
                 else if (direction == "prev" && session.SkinsStorePage > 0)
                     session.SkinsStorePage--;
@@ -2354,9 +2364,7 @@ namespace Oxide.Plugins
                     }, cardName);
                 }
             }
-                }, "AttachmentsSection");
-                
-                container.Add(new CuiPanel
+            
             private void ShowSkinsStoreContent(CuiElementContainer container, PlayerSession session, BasePlayer player)
             {
                 // Load weapon skins and outfit skins
@@ -2560,6 +2568,8 @@ namespace Oxide.Plugins
                         RectTransform = { AnchorMin = "0.80 0.01", AnchorMax = "0.98 0.05" }
                     }, "SkinsStoreSection");
                 }
+            }
+            
             private void ShowOutfitStoreContent(CuiElementContainer container, PlayerSession session, BasePlayer player)
             {
                 // ===== OUTFIT STORE SECTION ===== (Optimized height)
