@@ -990,6 +990,40 @@ namespace Oxide.Plugins
             if (session == null) return;
             
             session.SelectedStoreCategory = category;
+            // Reset page when switching categories
+            session.GunsStorePage = 0;
+            session.SkinsStorePage = 0;
+            _lobbyUI.ShowLobbyUIWithTab(player, "store");
+        }
+        
+        [ConsoleCommand("killadome.storepage")]
+        private void CmdStorePage(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null || !arg.HasArgs(1)) return;
+            
+            string direction = arg.Args[0].ToLower(); // "next" or "prev"
+            
+            var session = GetSession(player.userID);
+            if (session == null) return;
+            
+            string category = session.SelectedStoreCategory ?? "guns";
+            
+            if (category == "guns")
+            {
+                if (direction == "next")
+                    session.GunsStorePage++;
+                else if (direction == "prev" && session.GunsStorePage > 0)
+                    session.GunsStorePage--;
+            }
+            else if (category == "skins")
+            {
+                if (direction == "next")
+                    session.SkinsStorePage++;
+                else if (direction == "prev" && session.SkinsStorePage > 0)
+                    session.SkinsStorePage--;
+            }
+            
             _lobbyUI.ShowLobbyUIWithTab(player, "store");
         }
         
@@ -1106,7 +1140,9 @@ namespace Oxide.Plugins
             public bool IsInMatch { get; set; }
             public string EditingWeaponSlot { get; set; } // "primary" or "secondary"
             public string SelectedAttachmentCategory { get; set; } // "scopes", "silencers", "underbarrel"
-            public string SelectedStoreCategory { get; set; } // "guns" or "outfits"
+            public string SelectedStoreCategory { get; set; } // "guns", "skins", or "outfits"
+            public int GunsStorePage { get; set; } // Current page for gun store
+            public int SkinsStorePage { get; set; } // Current page for skins store
             public DateTime LastDiceGame { get; set; } // Cooldown for dice game
             
             internal PlayerSession(BasePlayer player, PlayerProfile profile)
@@ -1117,6 +1153,8 @@ namespace Oxide.Plugins
                 EditingWeaponSlot = "primary"; // Default to editing primary
                 SelectedAttachmentCategory = "scopes"; // Default to scopes tab
                 SelectedStoreCategory = "guns"; // Default to guns store
+                GunsStorePage = 0; // Start at first page
+                SkinsStorePage = 0; // Start at first page
             }
         }
         
