@@ -427,8 +427,11 @@ namespace Oxide.Plugins
             [JsonProperty("Lobby Spawn Position")]
             public Vector3 LobbySpawnPosition { get; set; } = new Vector3(0, 100, 0);
             
-            [JsonProperty("Arena Spawn Position")]
-            public Vector3 ArenaSpawnPosition { get; set; } = new Vector3(0, 100, 500);
+            [JsonProperty("Arena Spawn Positions")]
+            public List<Vector3> ArenaSpawnPositions { get; set; } = new List<Vector3>
+            {
+                new Vector3(0, 100, 500)
+            };
             
             [JsonProperty("Starting Blood Tokens")]
             public int StartingTokens { get; set; } = 500;
@@ -665,7 +668,20 @@ namespace Oxide.Plugins
         private void TeleportToArena(BasePlayer player)
         {
             if (player == null || !player.IsConnected) return;
-            player.Teleport(_config.ArenaSpawnPosition);
+            
+            // Select random spawn point from configured arena spawns
+            Vector3 spawnPos;
+            if (_config.ArenaSpawnPositions != null && _config.ArenaSpawnPositions.Count > 0)
+            {
+                spawnPos = _config.ArenaSpawnPositions[UnityEngine.Random.Range(0, _config.ArenaSpawnPositions.Count)];
+            }
+            else
+            {
+                // Fallback to default if no spawns configured
+                spawnPos = new Vector3(0, 100, 500);
+            }
+            
+            player.Teleport(spawnPos);
             
             // Apply loadout when entering arena
             ApplyLoadout(player);
@@ -1488,6 +1504,103 @@ namespace Oxide.Plugins
             }
             
             _lobbyUI.ShowLobbyUIWithTab(player, "loadouts");
+        }
+        
+        [ChatCommand("kdlobby")]
+        private void CmdSetLobbySpawn(BasePlayer player, string command, string[] args)
+        {
+            if (player == null) return;
+            
+            if (!permission.UserHasPermission(player.UserIDString, PERMISSION_ADMIN))
+            {
+                SendReply(player, "<color=#FF0000>Error:</color> You don't have permission to use this command!");
+                return;
+            }
+            
+            if (args.Length == 0 || args[0].ToLower() != "set")
+            {
+                SendReply(player, "<color=#00FF00>Lobby Spawn:</color> Usage: /kdlobby set");
+                return;
+            }
+            
+            // Set lobby spawn to player's current position
+            _config.LobbySpawnPosition = player.transform.position;
+            SaveConfig();
+            
+            SendReply(player, $"<color=#00FF00>Lobby Spawn:</color> Set to {player.transform.position}");
+            LogDebug($"Admin {player.displayName} set lobby spawn to {player.transform.position}");
+        }
+        
+        [ChatCommand("kdspawn")]
+        private void CmdSetArenaSpawn(BasePlayer player, string command, string[] args)
+        {
+            if (player == null) return;
+            
+            if (!permission.UserHasPermission(player.UserIDString, PERMISSION_ADMIN))
+            {
+                SendReply(player, "<color=#FF0000>Error:</color> You don't have permission to use this command!");
+                return;
+            }
+            
+            if (args.Length < 2 || args[0].ToLower() != "set")
+            {
+                SendReply(player, "<color=#00FF00>Arena Spawn:</color> Usage: /kdspawn set <number>");
+                SendReply(player, "Example: /kdspawn set 1");
+                return;
+            }
+            
+            if (!int.TryParse(args[1], out int spawnIndex) || spawnIndex < 1)
+            {
+                SendReply(player, "<color=#FF0000>Error:</color> Spawn number must be a positive integer!");
+                return;
+            }
+            
+            // Ensure list exists
+            if (_config.ArenaSpawnPositions == null)
+            {
+                _config.ArenaSpawnPositions = new List<Vector3>();
+            }
+            
+            // Expand list if needed
+            while (_config.ArenaSpawnPositions.Count < spawnIndex)
+            {
+                _config.ArenaSpawnPositions.Add(new Vector3(0, 100, 500));
+            }
+            
+            // Set spawn point (spawnIndex - 1 because 0-indexed)
+            _config.ArenaSpawnPositions[spawnIndex - 1] = player.transform.position;
+            SaveConfig();
+            
+            SendReply(player, $"<color=#00FF00>Arena Spawn #{spawnIndex}:</color> Set to {player.transform.position}");
+            LogDebug($"Admin {player.displayName} set arena spawn #{spawnIndex} to {player.transform.position}");
+        }
+        
+        [ChatCommand("kdspawns")]
+        private void CmdListSpawns(BasePlayer player, string command, string[] args)
+        {
+            if (player == null) return;
+            
+            if (!permission.UserHasPermission(player.UserIDString, PERMISSION_ADMIN))
+            {
+                SendReply(player, "<color=#FF0000>Error:</color> You don't have permission to use this command!");
+                return;
+            }
+            
+            SendReply(player, "<color=#00FF00>=== Spawn Points ===</color>");
+            SendReply(player, $"<color=#FFFF00>Lobby:</color> {_config.LobbySpawnPosition}");
+            
+            if (_config.ArenaSpawnPositions != null && _config.ArenaSpawnPositions.Count > 0)
+            {
+                SendReply(player, $"<color=#FFFF00>Arena Spawns:</color> {_config.ArenaSpawnPositions.Count} configured");
+                for (int i = 0; i < _config.ArenaSpawnPositions.Count; i++)
+                {
+                    SendReply(player, $"  #{i + 1}: {_config.ArenaSpawnPositions[i]}");
+                }
+            }
+            else
+            {
+                SendReply(player, "<color=#FF8A00>Arena Spawns:</color> None configured (using default)");
+            }
         }
         
         [ChatCommand("dice")]
