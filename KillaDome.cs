@@ -1322,14 +1322,14 @@ namespace Oxide.Plugins
                     CursorEnabled = true
                 }, "Overlay", UI_MAIN);
                 
-                // Title
+                // Title - optimized to use less space
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = "KILLADOME", FontSize = 36, Align = TextAnchor.MiddleCenter, Color = "1 0.5 0 1" },
-                    RectTransform = { AnchorMin = "0.3 0.85", AnchorMax = "0.7 0.95" }
+                    Text = { Text = "KILLADOME", FontSize = 32, Align = TextAnchor.MiddleCenter, Color = "1 0.5 0 1" },
+                    RectTransform = { AnchorMin = "0.3 0.88", AnchorMax = "0.7 0.96" }
                 }, UI_MAIN);
                 
-                // Tab buttons
+                // Tab buttons - increased height and spacing
                 AddTabButton(container, UI_MAIN, "PLAY", 0, player, "killadome.tab play");
                 AddTabButton(container, UI_MAIN, "LOADOUTS", 1, player, "killadome.tab loadouts");
                 AddTabButton(container, UI_MAIN, "STORE", 2, player, "killadome.tab store");
@@ -1344,11 +1344,11 @@ namespace Oxide.Plugins
                     Text = { Text = "X", FontSize = 20, Align = TextAnchor.MiddleCenter }
                 }, UI_MAIN);
                 
-                // Tab content container
+                // Tab content container - increased height for better use of space
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.1 0.1 0.1 0.9" },
-                    RectTransform = { AnchorMin = "0.1 0.15", AnchorMax = "0.9 0.75" }
+                    RectTransform = { AnchorMin = "0.1 0.08", AnchorMax = "0.9 0.78" }
                 }, UI_MAIN, UI_TAB_CONTAINER);
                 
                 // Show appropriate tab content
@@ -1388,7 +1388,7 @@ namespace Oxide.Plugins
                 container.Add(new CuiButton
                 {
                     Button = { Color = "0.3 0.3 0.3 1", Command = command },
-                    RectTransform = { AnchorMin = $"{minX} 0.78", AnchorMax = $"{maxX} 0.83" },
+                    RectTransform = { AnchorMin = $"{minX} 0.80", AnchorMax = $"{maxX} 0.86" },
                     Text = { Text = text, FontSize = 14, Align = TextAnchor.MiddleCenter }
                 }, parent);
             }
@@ -1453,7 +1453,7 @@ namespace Oxide.Plugins
                     currentWeapon = editingSlot == "primary" ? "ak47" : "pistol";
                 }
                 
-                // === HEADER === (8% height)
+                // === HEADER === (8% height, optimized positioning)
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.08 0.08 0.12 0.95" },
@@ -1472,7 +1472,7 @@ namespace Oxide.Plugins
                     RectTransform = { AnchorMin = "0 0.05", AnchorMax = "1 1" }
                 }, "LoadoutHeader");
                 
-                // === WEAPON SELECTION === (20% height)
+                // === WEAPON SELECTION === (20% height, optimized)
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.06 0.06 0.08 0.9" },
@@ -1925,11 +1925,11 @@ namespace Oxide.Plugins
                 
                 string selectedCategory = session.SelectedStoreCategory ?? "guns";
                 
-                // ===== HEADER SECTION WITH GRADIENT =====
+                // ===== HEADER SECTION WITH GRADIENT ===== (Optimized: 14% height)
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.08 0.08 0.12 0.95" },
-                    RectTransform = { AnchorMin = "0.05 0.80", AnchorMax = "0.95 0.92" }
+                    RectTransform = { AnchorMin = "0.05 0.84", AnchorMax = "0.95 0.98" }
                 }, UI_TAB_CONTAINER, "StoreHeader");
                 
                 // Top accent line (cyan glow)
@@ -1942,7 +1942,7 @@ namespace Oxide.Plugins
                 // Title with shadow effect
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = "━━━  S T O R E  ━━━", FontSize = 28, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+                    Text = { Text = "━━━  S T O R E  ━━━", FontSize = 26, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
                     RectTransform = { AnchorMin = "0.2 0.5", AnchorMax = "0.8 0.9" }
                 }, "StoreHeader");
                 
@@ -1969,22 +1969,22 @@ namespace Oxide.Plugins
                 // Token icon (using unicode symbol)
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = "◆", FontSize = 22, Align = TextAnchor.MiddleRight, Color = "1 0.8 0 1" },
+                    Text = { Text = "◆", FontSize = 20, Align = TextAnchor.MiddleRight, Color = "1 0.8 0 1" },
                     RectTransform = { AnchorMin = "0.05 0", AnchorMax = "0.35 1" }
                 }, tokenPanelName);
                 
                 // Token amount
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = $"{session.Profile.Tokens}", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = "1 0.9 0.7 1" },
+                    Text = { Text = $"{session.Profile.Tokens}", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 0.9 0.7 1" },
                     RectTransform = { AnchorMin = "0.35 0", AnchorMax = "0.95 1" }
                 }, tokenPanelName);
                 
-                // ===== SUB-TAB BUTTONS =====
+                // ===== SUB-TAB BUTTONS ===== (Optimized: 5% height)
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.06 0.06 0.08 0.9" },
-                    RectTransform = { AnchorMin = "0.05 0.74", AnchorMax = "0.95 0.79" }
+                    RectTransform = { AnchorMin = "0.05 0.78", AnchorMax = "0.95 0.83" }
                 }, UI_TAB_CONTAINER, "StoreSubTabs");
                 
                 // Gun Store Sub-Tab
@@ -2062,11 +2062,11 @@ namespace Oxide.Plugins
                     Shortname = g.Value.RustItemShortname
                 }).ToArray();
                 
-                // ===== BASE GUNS SECTION (LEFT SIDE) WITH SCROLLING =====
+                // ===== BASE GUNS SECTION (LEFT SIDE) WITH SCROLLING ===== (Optimized height)
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.06 0.06 0.08 0.85" },
-                    RectTransform = { AnchorMin = "0.05 0.08", AnchorMax = "0.48 0.72" }
+                    RectTransform = { AnchorMin = "0.05 0.08", AnchorMax = "0.48 0.77" }
                 }, UI_TAB_CONTAINER, "BaseGunsSection");
                 
                 // Section header bar
@@ -2217,11 +2217,11 @@ namespace Oxide.Plugins
                     new { Name = "Muzzle Boost", Cost = 350, Id = "weapon.mod.muzzleboost", ImageId = "muzzle_boost", Category = "Barrel" }
                 };
                 
-                // Section background
+                // Section background (Optimized height)
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.06 0.06 0.08 0.85" },
-                    RectTransform = { AnchorMin = "0.52 0.08", AnchorMax = "0.95 0.72" }
+                    RectTransform = { AnchorMin = "0.52 0.08", AnchorMax = "0.95 0.77" }
                 }, UI_TAB_CONTAINER, "AttachmentsSection");
                 
                 // Section header bar with cyan accent
@@ -2404,11 +2404,11 @@ namespace Oxide.Plugins
                 
                 var allSkins = weaponSkins.Concat(outfitSkins).ToArray();
                 
-                // ===== SKINS SECTION (FULL WIDTH) WITH SCROLLING =====
+                // ===== SKINS SECTION (FULL WIDTH) WITH SCROLLING ===== (Optimized height)
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.06 0.06 0.08 0.85" },
-                    RectTransform = { AnchorMin = "0.05 0.08", AnchorMax = "0.95 0.72" }
+                    RectTransform = { AnchorMin = "0.05 0.08", AnchorMax = "0.95 0.77" }
                 }, UI_TAB_CONTAINER, "SkinsStoreSection");
                 
                 // Section header bar
@@ -2596,11 +2596,11 @@ namespace Oxide.Plugins
             
             private void ShowOutfitStoreContent(CuiElementContainer container, PlayerSession session, BasePlayer player)
             {
-                // ===== OUTFIT STORE SECTION =====
+                // ===== OUTFIT STORE SECTION ===== (Optimized height)
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.06 0.06 0.08 0.85" },
-                    RectTransform = { AnchorMin = "0.05 0.08", AnchorMax = "0.95 0.72" }
+                    RectTransform = { AnchorMin = "0.05 0.08", AnchorMax = "0.95 0.77" }
                 }, UI_TAB_CONTAINER, "OutfitStoreSection");
                 
                 // Section header bar
