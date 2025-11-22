@@ -2275,7 +2275,7 @@ namespace Oxide.Plugins
                 float spacingX = 0.02f;
                 float spacingY = 0.01f;
                 float startX = 0.02f;
-                float startY = 0.92f;
+                float startYAtt = 0.92f;
                 
                 for (int i = 0; i < attachments.Length; i++)
                 {
@@ -2285,7 +2285,7 @@ namespace Oxide.Plugins
                     
                     float xMin = startX + (col * (cardWidth + spacingX));
                     float xMax = xMin + cardWidth;
-                    float yMax = startY - (row * (cardHeightAtt + spacingY));
+                    float yMax = startYAtt - (row * (cardHeightAtt + spacingY));
                     float yMin = yMax - cardHeightAtt;
                     
                     string cardName = $"AttCard_{i}";
