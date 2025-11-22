@@ -1569,11 +1569,18 @@ namespace Oxide.Plugins
                     ? _plugin._gunConfig.Guns[loadout.Primary].DisplayName 
                     : loadout.Primary.ToUpper();
                 
+                // Add background for better visibility
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "0.08 0.08 0.12 0.9" },
+                    RectTransform = { AnchorMin = "0.05 0.20", AnchorMax = "0.95 0.30" }
+                }, "PrimaryBox", "PrimaryNameBg");
+                
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = primaryDisplayName, FontSize = 20, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                    RectTransform = { AnchorMin = "0.05 0.12", AnchorMax = "0.95 0.28" }
-                }, "PrimaryBox");
+                    Text = { Text = primaryDisplayName, FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 0.9 0.5 1" },
+                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
+                }, "PrimaryNameBg");
                 
                 container.Add(new CuiButton
                 {
@@ -1625,11 +1632,18 @@ namespace Oxide.Plugins
                     ? _plugin._gunConfig.Guns[loadout.Secondary].DisplayName 
                     : loadout.Secondary.ToUpper();
                 
+                // Add background for better visibility
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "0.08 0.08 0.12 0.9" },
+                    RectTransform = { AnchorMin = "0.05 0.20", AnchorMax = "0.95 0.30" }
+                }, "SecondaryBox", "SecondaryNameBg");
+                
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = secondaryDisplayName, FontSize = 20, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                    RectTransform = { AnchorMin = "0.05 0.12", AnchorMax = "0.95 0.28" }
-                }, "SecondaryBox");
+                    Text = { Text = secondaryDisplayName, FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "0.7 0.9 1.0 1" },
+                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
+                }, "SecondaryNameBg");
                 
                 container.Add(new CuiButton
                 {
