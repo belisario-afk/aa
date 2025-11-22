@@ -1325,7 +1325,7 @@ namespace Oxide.Plugins
                 // Title - optimized to use less space
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = "KILLADOME", FontSize = 32, Align = TextAnchor.MiddleCenter, Color = "1 0.5 0 1" },
+                    Text = { Text = "KILLADOME", FontSize = 34, Align = TextAnchor.MiddleCenter, Color = "1 0.5 0 1" },
                     RectTransform = { AnchorMin = "0.3 0.88", AnchorMax = "0.7 0.96" }
                 }, UI_MAIN);
                 
@@ -1942,7 +1942,7 @@ namespace Oxide.Plugins
                 // Title with shadow effect
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = "━━━  S T O R E  ━━━", FontSize = 26, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+                    Text = { Text = "━━━  S T O R E  ━━━", FontSize = 28, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
                     RectTransform = { AnchorMin = "0.2 0.5", AnchorMax = "0.8 0.9" }
                 }, "StoreHeader");
                 
@@ -1969,14 +1969,14 @@ namespace Oxide.Plugins
                 // Token icon (using unicode symbol)
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = "◆", FontSize = 20, Align = TextAnchor.MiddleRight, Color = "1 0.8 0 1" },
+                    Text = { Text = "◆", FontSize = 22, Align = TextAnchor.MiddleRight, Color = "1 0.8 0 1" },
                     RectTransform = { AnchorMin = "0.05 0", AnchorMax = "0.35 1" }
                 }, tokenPanelName);
                 
                 // Token amount
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = $"{session.Profile.Tokens}", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 0.9 0.7 1" },
+                    Text = { Text = $"{session.Profile.Tokens}", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = "1 0.9 0.7 1" },
                     RectTransform = { AnchorMin = "0.35 0", AnchorMax = "0.95 1" }
                 }, tokenPanelName);
                 
