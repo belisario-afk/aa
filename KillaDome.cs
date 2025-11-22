@@ -415,7 +415,7 @@ namespace Oxide.Plugins
             public string ImageUrl { get; set; }
             public int Cost { get; set; } = 300;
             public string Rarity { get; set; } = "Common";
-            public string Tag { get; set} = "";
+            public string Tag { get; set; } = "";
         }
         
         #endregion
