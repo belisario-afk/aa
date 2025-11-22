@@ -51,6 +51,7 @@ namespace Oxide.Plugins
         
         private PluginConfig _config;
         private GunConfig _gunConfig;
+        private OutfitConfig _outfitConfig;
         private Dictionary<ulong, PlayerSession> _activeSessions = new Dictionary<ulong, PlayerSession>();
         
         private const string PERMISSION_ADMIN = "killadome.admin";
@@ -302,6 +303,120 @@ namespace Oxide.Plugins
             public string Rarity { get; set; } = "Common"; // Rarity tier
         }
         
+        // ===== OUTFIT/ARMOR CONFIGURATION =====
+        public class OutfitConfig
+        {
+            public List<ArmorItem> Armors = new List<ArmorItem>
+            {
+                // Head Armor
+                new ArmorItem
+                {
+                    Name = "Metal Facemask",
+                    ItemShortname = "metal.facemask",
+                    Slot = "head",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/mVY2Uav.png",
+                    Cost = 300,
+                    Rarity = "Common"
+                },
+                new ArmorItem
+                {
+                    Name = "Coffee Can Helmet",
+                    ItemShortname = "coffeecan.helmet",
+                    Slot = "head",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourCoffeeCanImage.png",
+                    Cost = 250,
+                    Rarity = "Common"
+                },
+                
+                // Chest Armor
+                new ArmorItem
+                {
+                    Name = "Metal Chest Plate",
+                    ItemShortname = "metal.plate.torso",
+                    Slot = "chest",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourMetalChestImage.png",
+                    Cost = 400,
+                    Rarity = "Rare"
+                },
+                new ArmorItem
+                {
+                    Name = "Road Sign Jacket",
+                    ItemShortname = "roadsign.jacket",
+                    Slot = "chest",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourRoadSignImage.png",
+                    Cost = 300,
+                    Rarity = "Common"
+                },
+                
+                // Legs Armor
+                new ArmorItem
+                {
+                    Name = "Heavy Plate Pants",
+                    ItemShortname = "heavy.plate.pants",
+                    Slot = "legs",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourHeavyPantsImage.png",
+                    Cost = 400,
+                    Rarity = "Rare"
+                },
+                new ArmorItem
+                {
+                    Name = "Road Sign Kilt",
+                    ItemShortname = "roadsign.kilt",
+                    Slot = "legs",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourRoadSignKiltImage.png",
+                    Cost = 300,
+                    Rarity = "Common"
+                },
+                
+                // Hands/Gloves
+                new ArmorItem
+                {
+                    Name = "Tactical Gloves",
+                    ItemShortname = "tactical.gloves",
+                    Slot = "hands",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourTacticalGlovesImage.png",
+                    Cost = 200,
+                    Rarity = "Common"
+                },
+                
+                // Feet/Boots
+                new ArmorItem
+                {
+                    Name = "Heavy Plate Boots",
+                    ItemShortname = "shoes.boots",
+                    Slot = "feet",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourBootsImage.png",
+                    Cost = 250,
+                    Rarity = "Common"
+                }
+            };
+            
+            public ArmorItem[] GetArmorsBySlot(string slot)
+            {
+                return Armors.Where(a => a.Slot == slot).ToArray();
+            }
+        }
+        
+        public class ArmorItem
+        {
+            public string Name { get; set; }
+            public string ItemShortname { get; set; }
+            public string Slot { get; set; } // "head", "chest", "legs", "hands", "feet"
+            public string SkinId { get; set; } = "0";
+            public string ImageUrl { get; set; }
+            public int Cost { get; set; } = 300;
+            public string Rarity { get; set; } = "Common";
+            public string Tag { get; set; } = "";
+        }
+        
         #endregion
         
         #region Configuration
@@ -380,6 +495,7 @@ namespace Oxide.Plugins
             
             // Initialize gun configuration
             _gunConfig = new GunConfig();
+            _outfitConfig = new OutfitConfig();
             
             // Initialize all systems
             _saveManager = new SaveManager(this, _config);
@@ -403,6 +519,47 @@ namespace Oxide.Plugins
         {
             timer.Every(_config.AutoSaveInterval, () => AutoSaveAllPlayers());
             LogDebug("Auto-save timer started");
+            
+            // Load images after server is ready
+            timer.Once(5f, () => LoadImages());
+        }
+        
+        private void LoadImages()
+        {
+            if (ImageLibrary == null || !ImageLibrary.IsLoaded)
+            {
+                PrintWarning("ImageLibrary not loaded. Images will not display. Please install ImageLibrary plugin.");
+                return;
+            }
+            
+            // Load gun images
+            foreach (var gun in _gunConfig.Guns.Values)
+            {
+                if (!string.IsNullOrEmpty(gun.ImageUrl))
+                {
+                    ImageLibrary.Call("AddImage", gun.ImageUrl, gun.ImageUrl);
+                }
+            }
+            
+            // Load skin images
+            foreach (var skin in _gunConfig.Skins)
+            {
+                if (!string.IsNullOrEmpty(skin.ImageUrl))
+                {
+                    ImageLibrary.Call("AddImage", skin.ImageUrl, skin.ImageUrl);
+                }
+            }
+            
+            // Load armor images
+            foreach (var armor in _outfitConfig.Armors)
+            {
+                if (!string.IsNullOrEmpty(armor.ImageUrl))
+                {
+                    ImageLibrary.Call("AddImage", armor.ImageUrl, armor.ImageUrl);
+                }
+            }
+            
+            Puts($"Loaded {_gunConfig.Guns.Count} gun images, {_gunConfig.Skins.Count} skin images, and {_outfitConfig.Armors.Count} armor images into ImageLibrary");
         }
         
         private void Unload()
@@ -2640,7 +2797,7 @@ namespace Oxide.Plugins
                 // Section Title with icon
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = "👕  O U T F I T   S T O R E", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1.0 0.8 0.9 1" },
+                    Text = { Text = "👕  A R M O R   S T O R E", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1.0 0.8 0.9 1" },
                     RectTransform = { AnchorMin = "0.05 0.96", AnchorMax = "0.95 1" }
                 }, "OutfitStoreSection");
                 
@@ -2657,18 +2814,109 @@ namespace Oxide.Plugins
                     RectTransform = { AnchorMin = "0.98 0.96", AnchorMax = "1 1" }
                 }, "OutfitStoreSection");
                 
-                // Coming Soon message (placeholder for future outfit system)
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "COMING SOON", FontSize = 32, Align = TextAnchor.MiddleCenter, Color = "0.8 0.8 0.8 0.5" },
-                    RectTransform = { AnchorMin = "0.3 0.45", AnchorMax = "0.7 0.55" }
-                }, "OutfitStoreSection");
+                // Display armor items in a 4-column grid
+                var armors = _plugin._outfitConfig.Armors;
+                int cols = 4;
+                int rows = 3;
+                int itemsPerPage = cols * rows; // 12 items
+                float cardWidth = 0.22f;
+                float cardHeight = 0.28f;
+                float spacingX = 0.02f;
+                float spacingY = 0.02f;
+                float startX = 0.05f;
+                float startY = 0.92f;
                 
-                container.Add(new CuiLabel
+                for (int i = 0; i < Math.Min(armors.Count, itemsPerPage); i++)
                 {
-                    Text = { Text = "Outfit customization will be available in a future update!\nCheck back later for player skins, clothing, and accessories.", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "0.6 0.6 0.6 1" },
-                    RectTransform = { AnchorMin = "0.2 0.35", AnchorMax = "0.8 0.45" }
-                }, "OutfitStoreSection");
+                    var armor = armors[i];
+                    int col = i % cols;
+                    int row = i / cols;
+                    
+                    float xMin = startX + (col * (cardWidth + spacingX));
+                    float yMax = startY - (row * (cardHeight + spacingY));
+                    float xMax = xMin + cardWidth;
+                    float yMin = yMax - cardHeight;
+                    
+                    string cardName = $"ArmorCard_{i}";
+                    
+                    // Card background
+                    container.Add(new CuiPanel
+                    {
+                        Image = { Color = "0.12 0.08 0.15 0.95" },
+                        RectTransform = { AnchorMin = $"{xMin} {yMin}", AnchorMax = $"{xMax} {yMax}" }
+                    }, "OutfitStoreSection", cardName);
+                    
+                    // Armor image
+                    if (_plugin.ImageLibrary != null && _plugin.ImageLibrary.IsLoaded)
+                    {
+                        string imageId = (string)_plugin.ImageLibrary.Call("GetImage", armor.ImageUrl);
+                        if (!string.IsNullOrEmpty(imageId))
+                        {
+                            container.Add(new CuiElement
+                            {
+                                Parent = cardName,
+                                Components =
+                                {
+                                    new CuiRawImageComponent { Png = imageId },
+                                    new CuiRectTransformComponent { AnchorMin = "0.1 0.40", AnchorMax = "0.9 0.90" }
+                                }
+                            });
+                        }
+                    }
+                    
+                    // Armor name
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = armor.Name, FontSize = 8, Align = TextAnchor.UpperCenter, Color = "1 0.9 0.95 1" },
+                        RectTransform = { AnchorMin = "0.05 0.30", AnchorMax = "0.95 0.38" }
+                    }, cardName);
+                    
+                    // Slot label
+                    string slotColor = armor.Slot == "head" ? "0.8 0.5 1.0" :
+                                      armor.Slot == "chest" ? "0.5 0.8 1.0" :
+                                      armor.Slot == "legs" ? "1.0 0.7 0.5" :
+                                      armor.Slot == "hands" ? "0.7 1.0 0.5" : "1.0 0.5 0.5";
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = armor.Slot.ToUpper(), FontSize = 6, Align = TextAnchor.MiddleCenter, Color = $"{slotColor} 1" },
+                        RectTransform = { AnchorMin = "0.05 0.22", AnchorMax = "0.95 0.30" }
+                    }, cardName);
+                    
+                    // Rarity
+                    string rarityColor = armor.Rarity == "Epic" ? "0.6 0.3 1.0" : 
+                                        armor.Rarity == "Legendary" ? "1.0 0.6 0.2" :
+                                        armor.Rarity == "Rare" ? "0.3 0.7 1.0" : "0.5 0.5 0.5";
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = $"★ {armor.Rarity}", FontSize = 7, Align = TextAnchor.MiddleCenter, Color = $"{rarityColor} 1" },
+                        RectTransform = { AnchorMin = "0.05 0.14", AnchorMax = "0.95 0.22" }
+                    }, cardName);
+                    
+                    // Price
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = "◆", FontSize = 8, Align = TextAnchor.MiddleRight, Color = "1 0.8 0 1" },
+                        RectTransform = { AnchorMin = "0.25 0.06", AnchorMax = "0.45 0.14" }
+                    }, cardName);
+                    
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = $"{armor.Cost}", FontSize = 7, Align = TextAnchor.MiddleLeft, Color = "1 0.9 0.7 1" },
+                        RectTransform = { AnchorMin = "0.45 0.06", AnchorMax = "0.75 0.14" }
+                    }, cardName);
+                    
+                    // Buy button
+                    bool canAfford = session.Profile.Tokens >= armor.Cost;
+                    string btnColor = canAfford ? "0.7 0.2 0.5" : "0.3 0.3 0.3";
+                    string btnText = canAfford ? "BUY" : "🔒";
+                    
+                    container.Add(new CuiButton
+                    {
+                        Button = { Color = $"{btnColor} 0.9", Command = canAfford ? $"killadome.purchase.armor {armor.ItemShortname} {armor.Cost}" : "" },
+                        Text = { Text = btnText, FontSize = 7, Align = TextAnchor.MiddleCenter, Color = canAfford ? "1 1 1 1" : "0.5 0.5 0.5 1" },
+                        RectTransform = { AnchorMin = "0.15 0.01", AnchorMax = "0.85 0.05" }
+                    }, cardName);
+                }
             }
             
             private void ShowStatsTab(CuiElementContainer container, BasePlayer player)
