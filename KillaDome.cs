@@ -2074,8 +2074,8 @@ namespace Oxide.Plugins
                         }
                     }
                     
-                    // Tag badge (NEW, POPULAR, etc) - Only show if tag exists
-                    if (!string.IsNullOrEmpty(item.Tag))
+                    // Tag badge (NEW, POPULAR, etc) - Only show if tag exists and is not whitespace
+                    if (!string.IsNullOrWhiteSpace(item.Tag))
                     {
                         string tagColor = item.Tag == "POPULAR" ? "1 0.3 0.3" : "0.3 1 0.5";
                         container.Add(new CuiPanel
