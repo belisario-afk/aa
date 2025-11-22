@@ -2423,7 +2423,7 @@ namespace Oxide.Plugins
                 // Section Title with icon
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = "👕  O U T F I T   S T O R E", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = "1.0 0.8 0.9 1" },
+                    Text = { Text = "👕  O U T F I T   S T O R E", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1.0 0.8 0.9 1" },
                     RectTransform = { AnchorMin = "0.05 0.96", AnchorMax = "0.95 1" }
                 }, "OutfitStoreSection");
                 
