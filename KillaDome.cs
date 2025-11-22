@@ -133,6 +133,9 @@ namespace Oxide.Plugins
             // - SkinId: Rust workshop skin ID or custom identifier
             // - WeaponId: Which gun this skin is for (must match a gun Id above)
             // - ImageUrl: Direct URL to the skin preview image
+            // - Cost: Price in Blood Tokens (default: 300)
+            // - Tag: Optional badge like "NEW", "POPULAR", "HOT" (default: "")
+            // - Rarity: Rarity tier like "Common", "Rare", "Epic", "Legendary" (default: "Common")
             
             public List<SkinDefinition> Skins = new List<SkinDefinition>
             {
@@ -142,14 +145,20 @@ namespace Oxide.Plugins
                     Name = "AK-47 Neon",
                     SkinId = "3102802323",
                     WeaponId = "ak47",
-                    ImageUrl = "https://i.imgur.com/YourAK47NeonSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourAK47NeonSkin.png",
+                    Cost = 500,
+                    Tag = "POPULAR",
+                    Rarity = "Epic"
                 },
                 new SkinDefinition
                 {
                     Name = "AK-47 Classic",
                     SkinId = "skin_ak47_classic",
                     WeaponId = "ak47",
-                    ImageUrl = "https://i.imgur.com/YourAK47ClassicSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourAK47ClassicSkin.png",
+                    Cost = 400,
+                    Tag = "NEW",
+                    Rarity = "Rare"
                 },
                 
                 // M249 Skins
@@ -158,7 +167,10 @@ namespace Oxide.Plugins
                     Name = "M249 Chrome",
                     SkinId = "skin_m249_chrome",
                     WeaponId = "m249",
-                    ImageUrl = "https://i.imgur.com/YourM249ChromeSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourM249ChromeSkin.png",
+                    Cost = 450,
+                    Tag = "",
+                    Rarity = "Epic"
                 },
                 
                 // Pistol Skins
@@ -167,7 +179,10 @@ namespace Oxide.Plugins
                     Name = "Pistol Black",
                     SkinId = "skin_pistol_black",
                     WeaponId = "pistol",
-                    ImageUrl = "https://i.imgur.com/YourPistolBlackSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourPistolBlackSkin.png",
+                    Cost = 250,
+                    Tag = "",
+                    Rarity = "Common"
                 },
                 
                 // LR-300 Skins
@@ -176,7 +191,10 @@ namespace Oxide.Plugins
                     Name = "LR-300 Gold",
                     SkinId = "skin_lr300_gold",
                     WeaponId = "lr300",
-                    ImageUrl = "https://i.imgur.com/YourLR300GoldSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourLR300GoldSkin.png",
+                    Cost = 600,
+                    Tag = "",
+                    Rarity = "Legendary"
                 },
                 
                 // MP5 Skins
@@ -185,7 +203,10 @@ namespace Oxide.Plugins
                     Name = "MP5 Tactical",
                     SkinId = "skin_mp5_tactical",
                     WeaponId = "mp5",
-                    ImageUrl = "https://i.imgur.com/YourMP5TacticalSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourMP5TacticalSkin.png",
+                    Cost = 350,
+                    Tag = "",
+                    Rarity = "Rare"
                 },
                 
                 // Example: Add a new skin here and it will automatically appear in Store Tab!
@@ -194,7 +215,10 @@ namespace Oxide.Plugins
                     Name = "Thompson Dragon",
                     SkinId = "skin_thompson_dragon",
                     WeaponId = "thompson",
-                    ImageUrl = "https://i.imgur.com/YourThompsonDragonSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourThompsonDragonSkin.png",
+                    Cost = 550,
+                    Tag = "HOT",
+                    Rarity = "Epic"
                 }
             };
             
@@ -236,6 +260,9 @@ namespace Oxide.Plugins
             public string SkinId { get; set; }
             public string WeaponId { get; set; }
             public string ImageUrl { get; set; }
+            public int Cost { get; set; } = 300; // Default cost
+            public string Tag { get; set; } = ""; // Optional tag like "NEW", "POPULAR", etc.
+            public string Rarity { get; set; } = "Common"; // Rarity tier
         }
         
         #endregion
@@ -1937,17 +1964,15 @@ namespace Oxide.Plugins
                 // ===== GUN SKINS SECTION =====
                 // Now dynamically loads from centralized GunConfig!
                 // When you add skins to GunConfig.Skins, they automatically appear here!
-                var gunSkinsFromConfig = _plugin._gunConfig.Skins.Select((skin, index) => new
+                var gunSkins = _plugin._gunConfig.Skins.Select(skin => new
                 {
                     Name = skin.Name,
-                    Cost = index < 2 ? 400 + (index * 100) : 300 + (index * 50), // Dynamic pricing based on order
+                    Cost = skin.Cost,
                     Id = skin.SkinId,
-                    ImageId = skin.ImageUrl, // Using ImageUrl from centralized config
-                    Tag = index == 0 ? "POPULAR" : (index == 1 ? "NEW" : ""),
-                    Rarity = index % 2 == 0 ? "Epic" : "Rare"
+                    ImageId = skin.ImageUrl,
+                    Tag = skin.Tag,
+                    Rarity = skin.Rarity
                 }).ToArray();
-                
-                var gunSkins = gunSkinsFromConfig;
                 
                 // Section background with gradient
                 container.Add(new CuiPanel
