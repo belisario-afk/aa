@@ -2056,7 +2056,7 @@ namespace Oxide.Plugins
                 var baseGuns = _plugin._gunConfig.Guns.Select(g => new
                 {
                     Name = g.Value.DisplayName,
-                    Cost = 0, // Base guns are free (unlocked by default) or set a price
+                    Cost = 0, // Base guns are free (unlocked by default)
                     Id = g.Value.Id,
                     ImageId = g.Value.ImageUrl,
                     Shortname = g.Value.RustItemShortname
@@ -2402,16 +2402,7 @@ namespace Oxide.Plugins
                     new { Name = "Desert Gear", Cost = 700, Id = "outfit_desert", ImageId = "outfit_desert", Tag = "HOT", Rarity = "Epic", Type = "Outfit" }
                 };
                 
-                var allSkins = weaponSkins.Concat(outfitSkins.Select(o => new
-                {
-                    Name = o.Name,
-                    Cost = o.Cost,
-                    Id = o.Id,
-                    ImageId = o.ImageId,
-                    Tag = o.Tag,
-                    Rarity = o.Rarity,
-                    Type = o.Type
-                })).ToArray();
+                var allSkins = weaponSkins.Concat(outfitSkins).ToArray();
                 
                 // ===== SKINS SECTION (FULL WIDTH) WITH SCROLLING =====
                 container.Add(new CuiPanel
