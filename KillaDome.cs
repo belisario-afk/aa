@@ -63,6 +63,12 @@ namespace Oxide.Plugins
         /// <summary>
         /// CENTRALIZED GUN AND IMAGE CONFIGURATION
         /// This is the ONLY place you need to add/edit guns and their images!
+        /// 
+        /// AUTOMATIC FEATURES:
+        /// - When you add a new gun to Guns dictionary, it automatically appears in the Loadout Tab
+        /// - When you add a new skin to Skins list, it automatically appears in the Store Tab
+        /// - No need to edit any other code - everything updates automatically!
+        /// 
         /// Changes here automatically apply to both Store Tab and Loadout Tab.
         /// </summary>
         public class GunConfig
@@ -110,6 +116,14 @@ namespace Oxide.Plugins
                     DisplayName = "MP5A4",
                     RustItemShortname = "smg.mp5",
                     ImageUrl = "https://i.imgur.com/YourMP5Image.png"
+                },
+                // Example: Add a new gun here and it will automatically appear in Loadout Tab!
+                ["thompson"] = new GunDefinition
+                {
+                    Id = "thompson",
+                    DisplayName = "Thompson",
+                    RustItemShortname = "smg.thompson",
+                    ImageUrl = "https://i.imgur.com/YourThompsonImage.png"
                 }
             };
             
@@ -172,6 +186,15 @@ namespace Oxide.Plugins
                     SkinId = "skin_mp5_tactical",
                     WeaponId = "mp5",
                     ImageUrl = "https://i.imgur.com/YourMP5TacticalSkin.png"
+                },
+                
+                // Example: Add a new skin here and it will automatically appear in Store Tab!
+                new SkinDefinition
+                {
+                    Name = "Thompson Dragon",
+                    SkinId = "skin_thompson_dragon",
+                    WeaponId = "thompson",
+                    ImageUrl = "https://i.imgur.com/YourThompsonDragonSkin.png"
                 }
             };
             
@@ -441,14 +464,12 @@ namespace Oxide.Plugins
         {
             if (string.IsNullOrEmpty(weaponName)) return;
             
-            // Map weapon names to item short names
-            string itemName = weaponName switch
+            // Get weapon info from centralized config
+            string itemName = "rifle.ak"; // Default fallback
+            if (_gunConfig.Guns.TryGetValue(weaponName, out var gunDef))
             {
-                "ak47" => "rifle.ak",
-                "m249" => "lmg.m249",
-                "pistol" => "pistol.semiauto",
-                _ => "rifle.ak"
-            };
+                itemName = gunDef.RustItemShortname;
+            }
             
             var item = ItemManager.CreateByName(itemName, 1);
             if (item == null) return;
@@ -1915,6 +1936,7 @@ namespace Oxide.Plugins
                 
                 // ===== GUN SKINS SECTION =====
                 // Now dynamically loads from centralized GunConfig!
+                // When you add skins to GunConfig.Skins, they automatically appear here!
                 var gunSkinsFromConfig = _plugin._gunConfig.Skins.Select((skin, index) => new
                 {
                     Name = skin.Name,
@@ -2027,19 +2049,22 @@ namespace Oxide.Plugins
                         }
                     }
                     
-                    // Tag badge (NEW, POPULAR, etc)
-                    string tagColor = item.Tag == "POPULAR" ? "1 0.3 0.3" : "0.3 1 0.5";
-                    container.Add(new CuiPanel
+                    // Tag badge (NEW, POPULAR, etc) - Only show if tag exists
+                    if (!string.IsNullOrEmpty(item.Tag))
                     {
-                        Image = { Color = $"{tagColor} 0.9" },
-                        RectTransform = { AnchorMin = "0.05 0.85", AnchorMax = "0.30 0.95" }
-                    }, cardName);
-                    
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = item.Tag, FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "0.1 0.1 0.1 1" },
-                        RectTransform = { AnchorMin = "0.05 0.85", AnchorMax = "0.30 0.95" }
-                    }, cardName);
+                        string tagColor = item.Tag == "POPULAR" ? "1 0.3 0.3" : "0.3 1 0.5";
+                        container.Add(new CuiPanel
+                        {
+                            Image = { Color = $"{tagColor} 0.9" },
+                            RectTransform = { AnchorMin = "0.05 0.85", AnchorMax = "0.30 0.95" }
+                        }, cardName);
+                        
+                        container.Add(new CuiLabel
+                        {
+                            Text = { Text = item.Tag, FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "0.1 0.1 0.1 1" },
+                            RectTransform = { AnchorMin = "0.05 0.85", AnchorMax = "0.30 0.95" }
+                        }, cardName);
+                    }
                     
                     // Item name with larger font
                     container.Add(new CuiLabel
