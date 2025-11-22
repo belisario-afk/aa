@@ -983,8 +983,8 @@ namespace Oxide.Plugins
             var player = arg.Player();
             if (player == null || !arg.HasArgs(1)) return;
             
-            string category = arg.Args[0].ToLower(); // "guns" or "outfits"
-            if (category != "guns" && category != "outfits") return;
+            string category = arg.Args[0].ToLower(); // "guns", "skins", or "outfits"
+            if (category != "guns" && category != "skins" && category != "outfits") return;
             
             var session = GetSession(player.userID);
             if (session == null) return;
@@ -1993,7 +1993,16 @@ namespace Oxide.Plugins
                 {
                     Button = { Color = isGunsSelected ? "0.2 0.6 0.8 0.9" : "0.12 0.12 0.15 0.9", Command = "killadome.storecat guns" },
                     Text = { Text = "⚔ GUN STORE", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = isGunsSelected ? "1 1 1 1" : "0.6 0.6 0.6 1" },
-                    RectTransform = { AnchorMin = "0.02 0.1", AnchorMax = "0.32 0.9" }
+                    RectTransform = { AnchorMin = "0.02 0.1", AnchorMax = "0.24 0.9" }
+                }, "StoreSubTabs");
+                
+                // Skins Store Sub-Tab (NEW)
+                bool isSkinsSelected = selectedCategory == "skins";
+                container.Add(new CuiButton
+                {
+                    Button = { Color = isSkinsSelected ? "0.2 0.6 0.8 0.9" : "0.12 0.12 0.15 0.9", Command = "killadome.storecat skins" },
+                    Text = { Text = "🎨 SKINS STORE", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = isSkinsSelected ? "1 1 1 1" : "0.6 0.6 0.6 1" },
+                    RectTransform = { AnchorMin = "0.26 0.1", AnchorMax = "0.48 0.9" }
                 }, "StoreSubTabs");
                 
                 // Outfit Store Sub-Tab
@@ -2002,13 +2011,17 @@ namespace Oxide.Plugins
                 {
                     Button = { Color = isOutfitsSelected ? "0.2 0.6 0.8 0.9" : "0.12 0.12 0.15 0.9", Command = "killadome.storecat outfits" },
                     Text = { Text = "👕 OUTFIT STORE", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = isOutfitsSelected ? "1 1 1 1" : "0.6 0.6 0.6 1" },
-                    RectTransform = { AnchorMin = "0.34 0.1", AnchorMax = "0.64 0.9" }
+                    RectTransform = { AnchorMin = "0.50 0.1", AnchorMax = "0.72 0.9" }
                 }, "StoreSubTabs");
                 
                 // Display selected category content
                 if (selectedCategory == "guns")
                 {
                     ShowGunStoreContent(container, session, player);
+                }
+                else if (selectedCategory == "skins")
+                {
+                    ShowSkinsStoreContent(container, session, player);
                 }
                 else if (selectedCategory == "outfits")
                 {
@@ -2039,78 +2052,76 @@ namespace Oxide.Plugins
             
             private void ShowGunStoreContent(CuiElementContainer container, PlayerSession session, BasePlayer player)
             {
-                // Now dynamically loads from centralized GunConfig!
-                var gunSkins = _plugin._gunConfig.Skins.Select(skin => new
+                // Load base guns from centralized config
+                var baseGuns = _plugin._gunConfig.Guns.Select(g => new
                 {
-                    Name = skin.Name,
-                    Cost = skin.Cost,
-                    Id = skin.SkinId,
-                    ImageId = skin.ImageUrl,
-                    Tag = skin.Tag,
-                    Rarity = skin.Rarity
+                    Name = g.Value.DisplayName,
+                    Cost = 0, // Base guns are free (unlocked by default) or set a price
+                    Id = g.Value.Id,
+                    ImageId = g.Value.ImageUrl,
+                    Shortname = g.Value.RustItemShortname
                 }).ToArray();
                 
-                // ===== GUN SKINS SECTION (LEFT SIDE) WITH SCROLLING =====
+                // ===== BASE GUNS SECTION (LEFT SIDE) WITH SCROLLING =====
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.06 0.06 0.08 0.85" },
                     RectTransform = { AnchorMin = "0.05 0.08", AnchorMax = "0.48 0.72" }
-                }, UI_TAB_CONTAINER, "GunSkinsSection");
+                }, UI_TAB_CONTAINER, "BaseGunsSection");
                 
                 // Section header bar
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.15 0.1 0.2 0.9" },
                     RectTransform = { AnchorMin = "0 0.96", AnchorMax = "1 1" }
-                }, "GunSkinsSection");
+                }, "BaseGunsSection");
                 
                 // Section Title with icon
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = "⚔  W E A P O N   S K I N S", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "0.9 0.8 1.0 1" },
+                    Text = { Text = "⚔  B A S E   G U N S", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "0.9 0.8 1.0 1" },
                     RectTransform = { AnchorMin = "0.05 0.96", AnchorMax = "0.95 1" }
-                }, "GunSkinsSection");
+                }, "BaseGunsSection");
                 
                 // Decorative corner accents
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.6 0.4 1.0 0.3" },
                     RectTransform = { AnchorMin = "0 0.96", AnchorMax = "0.02 1" }
-                }, "GunSkinsSection");
+                }, "BaseGunsSection");
                 
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0.6 0.4 1.0 0.3" },
                     RectTransform = { AnchorMin = "0.98 0.96", AnchorMax = "1 1" }
-                }, "GunSkinsSection");
+                }, "BaseGunsSection");
                 
-                // Scrollable content area for gun skins
+                // Scrollable content area for base guns
                 container.Add(new CuiPanel
                 {
                     Image = { Color = "0 0 0 0" },
                     RectTransform = { AnchorMin = "0.02 0.02", AnchorMax = "0.98 0.95" }
-                }, "GunSkinsSection", "GunSkinsScroll");
+                }, "BaseGunsSection", "BaseGunsScroll");
                 
-                // Gun Skins Items - Scrollable card design
-                float cardHeight = 0.30f;
+                // Base Guns Items - Scrollable card design
+                float cardHeight = 0.28f;
                 float cardSpacing = 0.02f;
-                float totalHeight = gunSkins.Length * (cardHeight + cardSpacing);
                 
-                for (int i = 0; i < gunSkins.Length; i++)
+                for (int i = 0; i < baseGuns.Length; i++)
                 {
-                    var item = gunSkins[i];
+                    var item = baseGuns[i];
                     // Calculate position in scrollable area (stacking vertically)
                     float yMax = 1.0f - (i * (cardHeight + cardSpacing));
                     float yMin = yMax - cardHeight;
                     
-                    string cardName = $"GunSkinCard_{i}";
+                    string cardName = $"BaseGunCard_{i}";
                     
                     // Card background with gradient
                     container.Add(new CuiPanel
                     {
                         Image = { Color = "0.12 0.12 0.16 0.95" },
                         RectTransform = { AnchorMin = $"0.02 {yMin}", AnchorMax = $"0.98 {yMax}" }
-                    }, "GunSkinsScroll", cardName);
+                    }, "BaseGunsScroll", cardName);
                     
                     // Glow effect border
                     container.Add(new CuiElement
@@ -2125,7 +2136,7 @@ namespace Oxide.Plugins
                     });
                     
                     // Preview box with border
-                    string previewName = $"StorePreviewGun_{i}";
+                    string previewName = $"StorePreviewBaseGun_{i}";
                     container.Add(new CuiPanel
                     {
                         Image = { Color = "0.08 0.08 0.12 1" },
@@ -2162,67 +2173,32 @@ namespace Oxide.Plugins
                         }
                     }
                     
-                    // Tag badge (NEW, POPULAR, etc) - Only show if tag exists
-                    if (!string.IsNullOrWhiteSpace(item.Tag))
-                    {
-                        string tagColor = item.Tag == "POPULAR" ? "1 0.3 0.3" : "0.3 1 0.5";
-                        container.Add(new CuiPanel
-                        {
-                            Image = { Color = $"{tagColor} 0.9" },
-                            RectTransform = { AnchorMin = "0.05 0.80", AnchorMax = "0.25 0.90" }
-                        }, cardName);
-                        
-                        container.Add(new CuiLabel
-                        {
-                            Text = { Text = item.Tag, FontSize = 8, Align = TextAnchor.MiddleCenter, Color = "0.1 0.1 0.1 1" },
-                            RectTransform = { AnchorMin = "0.05 0.80", AnchorMax = "0.25 0.90" }
-                        }, cardName);
-                    }
-                    
-                    // Item name with larger font
+                    // Item name
                     container.Add(new CuiLabel
                     {
                         Text = { Text = item.Name, FontSize = 12, Align = TextAnchor.UpperLeft, Color = "1 1 1 1" },
-                        RectTransform = { AnchorMin = "0.40 0.65", AnchorMax = "0.95 0.85" }
+                        RectTransform = { AnchorMin = "0.40 0.60", AnchorMax = "0.95 0.80" }
                     }, cardName);
                     
-                    // Rarity indicator
-                    string rarityColor = item.Rarity == "Epic" ? "0.6 0.3 1.0" : 
-                                        item.Rarity == "Legendary" ? "1.0 0.6 0.2" :
-                                        item.Rarity == "Rare" ? "0.3 0.7 1.0" : "0.5 0.5 0.5";
+                    // Shortname info
                     container.Add(new CuiLabel
                     {
-                        Text = { Text = $"★ {item.Rarity}", FontSize = 9, Align = TextAnchor.UpperLeft, Color = $"{rarityColor} 1" },
-                        RectTransform = { AnchorMin = "0.40 0.50", AnchorMax = "0.95 0.65" }
+                        Text = { Text = item.Shortname, FontSize = 9, Align = TextAnchor.UpperLeft, Color = "0.6 0.6 0.6 1" },
+                        RectTransform = { AnchorMin = "0.40 0.45", AnchorMax = "0.95 0.60" }
                     }, cardName);
                     
-                    // Price with icon
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = "◆", FontSize = 13, Align = TextAnchor.MiddleRight, Color = "1 0.8 0 1" },
-                        RectTransform = { AnchorMin = "0.40 0.30", AnchorMax = "0.50 0.45" }
-                    }, cardName);
+                    // Status (Unlocked or price)
+                    string statusText = item.Cost == 0 ? "UNLOCKED" : $"{item.Cost} Tokens";
+                    string statusColor = item.Cost == 0 ? "0.4 1.0 0.4" : "1.0 0.8 0.0";
                     
                     container.Add(new CuiLabel
                     {
-                        Text = { Text = $"{item.Cost}", FontSize = 11, Align = TextAnchor.MiddleLeft, Color = "1 0.9 0.7 1" },
-                        RectTransform = { AnchorMin = "0.50 0.30", AnchorMax = "0.70 0.45" }
-                    }, cardName);
-                    
-                    // Modern BUY button with gradient
-                    bool canAfford = session.Profile.Tokens >= item.Cost;
-                    string buttonBgColor = canAfford ? "0.2 0.7 0.3" : "0.3 0.3 0.3";
-                    string buttonTextColor = canAfford ? "1 1 1" : "0.5 0.5 0.5";
-                    
-                    container.Add(new CuiButton
-                    {
-                        Button = { Color = $"{buttonBgColor} 0.9", Command = canAfford ? $"killadome.purchase {item.Id} {item.Cost}" : "" },
-                        Text = { Text = canAfford ? "PURCHASE" : "LOCKED", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = $"{buttonTextColor} 1" },
-                        RectTransform = { AnchorMin = "0.40 0.10", AnchorMax = "0.95 0.25" }
+                        Text = { Text = statusText, FontSize = 11, Align = TextAnchor.MiddleLeft, Color = $"{statusColor} 1" },
+                        RectTransform = { AnchorMin = "0.40 0.15", AnchorMax = "0.95 0.35" }
                     }, cardName);
                 }
                 
-                // ===== ATTACHMENTS SECTION (RIGHT SIDE) =====
+                // ===== ATTACHMENTS SECTION (RIGHT SIDE) WITH SCROLLING =====
                 var attachments = new[]
                 {
                     // Scopes
@@ -2282,10 +2258,10 @@ namespace Oxide.Plugins
                     RectTransform = { AnchorMin = "0.02 0.02", AnchorMax = "0.98 0.95" }
                 }, "AttachmentsSection", "AttachmentsScroll");
                 
-                // Grid layout for attachments (2 columns for better fit)
+                // Grid layout for attachments (2 columns with scrolling)
                 int itemsPerRow = 2;
                 float cardWidth = 0.47f;
-                float cardHeightAtt = 0.30f;
+                float cardHeightAtt = 0.28f;
                 float spacingX = 0.03f;
                 float spacingY = 0.03f;
                 float startX = 0.02f;
@@ -2400,6 +2376,229 @@ namespace Oxide.Plugins
                         Button = { Color = $"{btnColor} 0.9", Command = canAfford ? $"killadome.purchase {item.Id} {item.Cost}" : "" },
                         Text = { Text = btnText, FontSize = 10, Align = TextAnchor.MiddleCenter, Color = canAfford ? "1 1 1 1" : "0.5 0.5 0.5 1" },
                         RectTransform = { AnchorMin = "0.15 0.02", AnchorMax = "0.85 0.12" }
+                    }, cardName);
+                }
+            }
+            
+            private void ShowSkinsStoreContent(CuiElementContainer container, PlayerSession session, BasePlayer player)
+            {
+                // Load weapon skins and outfit skins
+                var weaponSkins = _plugin._gunConfig.Skins.Select(skin => new
+                {
+                    Name = skin.Name,
+                    Cost = skin.Cost,
+                    Id = skin.SkinId,
+                    ImageId = skin.ImageUrl,
+                    Tag = skin.Tag,
+                    Rarity = skin.Rarity,
+                    Type = "Weapon"
+                }).ToList();
+                
+                // Placeholder outfit skins
+                var outfitSkins = new[]
+                {
+                    new { Name = "Tactical Outfit", Cost = 800, Id = "outfit_tactical", ImageId = "outfit_tactical", Tag = "NEW", Rarity = "Epic", Type = "Outfit" },
+                    new { Name = "Urban Camo", Cost = 600, Id = "outfit_urban", ImageId = "outfit_urban", Tag = "", Rarity = "Rare", Type = "Outfit" },
+                    new { Name = "Desert Gear", Cost = 700, Id = "outfit_desert", ImageId = "outfit_desert", Tag = "HOT", Rarity = "Epic", Type = "Outfit" }
+                };
+                
+                var allSkins = weaponSkins.Concat(outfitSkins.Select(o => new
+                {
+                    Name = o.Name,
+                    Cost = o.Cost,
+                    Id = o.Id,
+                    ImageId = o.ImageId,
+                    Tag = o.Tag,
+                    Rarity = o.Rarity,
+                    Type = o.Type
+                })).ToArray();
+                
+                // ===== SKINS SECTION (FULL WIDTH) WITH SCROLLING =====
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "0.06 0.06 0.08 0.85" },
+                    RectTransform = { AnchorMin = "0.05 0.08", AnchorMax = "0.95 0.72" }
+                }, UI_TAB_CONTAINER, "SkinsStoreSection");
+                
+                // Section header bar
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "0.15 0.1 0.2 0.9" },
+                    RectTransform = { AnchorMin = "0 0.96", AnchorMax = "1 1" }
+                }, "SkinsStoreSection");
+                
+                // Section Title with icon
+                container.Add(new CuiLabel
+                {
+                    Text = { Text = "🎨  W E A P O N   &   O U T F I T   S K I N S", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1.0 0.9 0.8 1" },
+                    RectTransform = { AnchorMin = "0.05 0.96", AnchorMax = "0.95 1" }
+                }, "SkinsStoreSection");
+                
+                // Decorative corner accents
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "1.0 0.6 0.4 0.3" },
+                    RectTransform = { AnchorMin = "0 0.96", AnchorMax = "0.02 1" }
+                }, "SkinsStoreSection");
+                
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "1.0 0.6 0.4 0.3" },
+                    RectTransform = { AnchorMin = "0.98 0.96", AnchorMax = "1 1" }
+                }, "SkinsStoreSection");
+                
+                // Scrollable content area for skins
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "0 0 0 0" },
+                    RectTransform = { AnchorMin = "0.02 0.02", AnchorMax = "0.98 0.95" }
+                }, "SkinsStoreSection", "SkinsStoreScroll");
+                
+                // Grid layout for skins (3 columns with scrolling)
+                int itemsPerRow = 3;
+                float cardWidth = 0.31f;
+                float cardHeight = 0.35f;
+                float spacingX = 0.02f;
+                float spacingY = 0.02f;
+                float startX = 0.02f;
+                float startY = 1.0f;
+                
+                for (int i = 0; i < allSkins.Length; i++)
+                {
+                    var item = allSkins[i];
+                    int row = i / itemsPerRow;
+                    int col = i % itemsPerRow;
+                    
+                    float xMin = startX + (col * (cardWidth + spacingX));
+                    float xMax = xMin + cardWidth;
+                    float yMax = startY - (row * (cardHeight + spacingY));
+                    float yMin = yMax - cardHeight;
+                    
+                    string cardName = $"SkinCard_{i}";
+                    
+                    // Card background
+                    container.Add(new CuiPanel
+                    {
+                        Image = { Color = "0.12 0.12 0.16 0.95" },
+                        RectTransform = { AnchorMin = $"{xMin} {yMin}", AnchorMax = $"{xMax} {yMax}" }
+                    }, "SkinsStoreScroll", cardName);
+                    
+                    // Glow effect border
+                    container.Add(new CuiElement
+                    {
+                        Parent = cardName,
+                        Components =
+                        {
+                            new CuiImageComponent { Color = "0.3 0.3 0.3 0.0" },
+                            new CuiOutlineComponent { Color = "0.5 0.4 0.7 0.6", Distance = "2 -2" },
+                            new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1" }
+                        }
+                    });
+                    
+                    // Preview box
+                    string previewName = $"SkinPreview_{i}";
+                    container.Add(new CuiPanel
+                    {
+                        Image = { Color = "0.08 0.08 0.12 1" },
+                        RectTransform = { AnchorMin = "0.10 0.40", AnchorMax = "0.90 0.90" }
+                    }, cardName, previewName);
+                    
+                    // Preview border glow
+                    container.Add(new CuiElement
+                    {
+                        Parent = previewName,
+                        Components =
+                        {
+                            new CuiImageComponent { Color = "0.2 0.2 0.2 0.0" },
+                            new CuiOutlineComponent { Color = "0.4 0.3 0.6 0.8", Distance = "1 -1" },
+                            new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1" }
+                        }
+                    });
+                    
+                    // Try to add image
+                    if (_plugin.ImageLibrary != null && _plugin.ImageLibrary.IsLoaded)
+                    {
+                        string imageId = (string)_plugin.ImageLibrary.Call("GetImage", item.ImageId);
+                        if (!string.IsNullOrEmpty(imageId))
+                        {
+                            container.Add(new CuiElement
+                            {
+                                Parent = previewName,
+                                Components =
+                                {
+                                    new CuiRawImageComponent { Png = imageId },
+                                    new CuiRectTransformComponent { AnchorMin = "0.1 0.1", AnchorMax = "0.9 0.9" }
+                                }
+                            });
+                        }
+                    }
+                    
+                    // Type badge (Weapon/Outfit)
+                    string typeColor = item.Type == "Weapon" ? "0.6 0.4 1.0" : "1.0 0.6 0.4";
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = item.Type.ToUpper(), FontSize = 7, Align = TextAnchor.MiddleCenter, Color = $"{typeColor} 0.9" },
+                        RectTransform = { AnchorMin = "0.05 0.85", AnchorMax = "0.35 0.93" }
+                    }, cardName);
+                    
+                    // Tag badge (if exists)
+                    if (!string.IsNullOrWhiteSpace(item.Tag))
+                    {
+                        string tagColor = item.Tag == "POPULAR" ? "1 0.3 0.3" : 
+                                         item.Tag == "HOT" ? "1.0 0.5 0.0" : "0.3 1 0.5";
+                        container.Add(new CuiPanel
+                        {
+                            Image = { Color = $"{tagColor} 0.9" },
+                            RectTransform = { AnchorMin = "0.65 0.85", AnchorMax = "0.95 0.93" }
+                        }, cardName);
+                        
+                        container.Add(new CuiLabel
+                        {
+                            Text = { Text = item.Tag, FontSize = 7, Align = TextAnchor.MiddleCenter, Color = "0.1 0.1 0.1 1" },
+                            RectTransform = { AnchorMin = "0.65 0.85", AnchorMax = "0.95 0.93" }
+                        }, cardName);
+                    }
+                    
+                    // Item name
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = item.Name, FontSize = 10, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+                        RectTransform = { AnchorMin = "0.05 0.28", AnchorMax = "0.95 0.38" }
+                    }, cardName);
+                    
+                    // Rarity indicator
+                    string rarityColor = item.Rarity == "Epic" ? "0.6 0.3 1.0" : 
+                                        item.Rarity == "Legendary" ? "1.0 0.6 0.2" :
+                                        item.Rarity == "Rare" ? "0.3 0.7 1.0" : "0.5 0.5 0.5";
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = $"★ {item.Rarity}", FontSize = 8, Align = TextAnchor.MiddleCenter, Color = $"{rarityColor} 1" },
+                        RectTransform = { AnchorMin = "0.05 0.20", AnchorMax = "0.95 0.28" }
+                    }, cardName);
+                    
+                    // Price
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = "◆", FontSize = 10, Align = TextAnchor.MiddleRight, Color = "1 0.8 0 1" },
+                        RectTransform = { AnchorMin = "0.25 0.09", AnchorMax = "0.45 0.18" }
+                    }, cardName);
+                    
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = $"{item.Cost}", FontSize = 9, Align = TextAnchor.MiddleLeft, Color = "1 0.9 0.7 1" },
+                        RectTransform = { AnchorMin = "0.45 0.09", AnchorMax = "0.75 0.18" }
+                    }, cardName);
+                    
+                    // Buy button
+                    bool canAfford = session.Profile.Tokens >= item.Cost;
+                    string btnColor = canAfford ? "0.2 0.7 0.3" : "0.3 0.3 0.3";
+                    string btnText = canAfford ? "BUY" : "🔒";
+                    
+                    container.Add(new CuiButton
+                    {
+                        Button = { Color = $"{btnColor} 0.9", Command = canAfford ? $"killadome.purchase {item.Id} {item.Cost}" : "" },
+                        Text = { Text = btnText, FontSize = 9, Align = TextAnchor.MiddleCenter, Color = canAfford ? "1 1 1 1" : "0.5 0.5 0.5 1" },
+                        RectTransform = { AnchorMin = "0.15 0.02", AnchorMax = "0.85 0.08" }
                     }, cardName);
                 }
             }
