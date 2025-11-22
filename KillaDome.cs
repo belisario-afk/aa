@@ -679,6 +679,9 @@ namespace Oxide.Plugins
             // Give secondary weapon
             GiveWeapon(player, loadout.Secondary, loadout.SecondaryAttachments, loadout.Skins);
             
+            // Give equipped armor/outfit
+            GiveArmor(player, loadout);
+            
             LogDebug($"Applied loadout to {player.displayName}");
         }
         
@@ -746,6 +749,64 @@ namespace Oxide.Plugins
             {
                 player.inventory.GiveItem(ammo);
             }
+        }
+        
+        private void GiveArmor(BasePlayer player, Loadout loadout)
+        {
+            if (player == null || loadout == null) return;
+            
+            // Give head armor
+            if (!string.IsNullOrEmpty(loadout.ArmorHead))
+            {
+                GiveArmorPiece(player, loadout.ArmorHead);
+            }
+            
+            // Give chest armor
+            if (!string.IsNullOrEmpty(loadout.ArmorChest))
+            {
+                GiveArmorPiece(player, loadout.ArmorChest);
+            }
+            
+            // Give legs armor
+            if (!string.IsNullOrEmpty(loadout.ArmorLegs))
+            {
+                GiveArmorPiece(player, loadout.ArmorLegs);
+            }
+            
+            // Give hands armor
+            if (!string.IsNullOrEmpty(loadout.ArmorHands))
+            {
+                GiveArmorPiece(player, loadout.ArmorHands);
+            }
+            
+            // Give feet armor
+            if (!string.IsNullOrEmpty(loadout.ArmorFeet))
+            {
+                GiveArmorPiece(player, loadout.ArmorFeet);
+            }
+            
+            LogDebug($"Applied armor to {player.displayName}");
+        }
+        
+        private void GiveArmorPiece(BasePlayer player, string armorShortname)
+        {
+            if (string.IsNullOrEmpty(armorShortname)) return;
+            
+            var item = ItemManager.CreateByName(armorShortname, 1);
+            if (item == null)
+            {
+                LogDebug($"Failed to create armor item: {armorShortname}");
+                return;
+            }
+            
+            // Try to move to wear container (for clothing/armor)
+            if (!item.MoveToContainer(player.inventory.containerWear))
+            {
+                // If wear container is full or item can't be worn, give to main inventory
+                player.inventory.GiveItem(item);
+            }
+            
+            LogDebug($"Gave armor piece {armorShortname} to {player.displayName}");
         }
         
         private void AutoSaveAllPlayers()
