@@ -82,63 +82,6 @@ namespace Oxide.Plugins
         }
         
         /// <summary>
-        /// Test method - shows a simple UI to verify plugin communication works
-        /// </summary>
-        [HookMethod("ShowTestUI")]
-        public void ShowTestUI(BasePlayer player)
-        {
-            Puts($"[KillaUI] ========== ShowTestUI ENTRY POINT ==========");
-            Puts($"[KillaUI] ShowTestUI called with player: {player?.displayName}");
-            
-            try
-            {
-                if (player == null)
-                {
-                    PrintWarning("ShowTestUI: player is null");
-                    Puts($"[KillaUI] ShowTestUI: player is null!");
-                    return;
-                }
-                
-                Puts($"[KillaUI] ShowTestUI: Player is valid, creating UI...");
-                
-                var container = new CuiElementContainer();
-                
-                // Simple test panel
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "1 0 0 0.8" },
-                    RectTransform = { AnchorMin = "0.3 0.3", AnchorMax = "0.7 0.7" },
-                    CursorEnabled = true
-                }, "Overlay", "TestUI");
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "TEST UI - Plugin Working!", FontSize = 24, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                    RectTransform = { AnchorMin = "0 0.4", AnchorMax = "1 0.6" }
-                }, "TestUI");
-                
-                container.Add(new CuiButton
-                {
-                    Button = { Close = "TestUI", Color = "0.8 0.2 0.2 1" },
-                    RectTransform = { AnchorMin = "0.35 0.2", AnchorMax = "0.65 0.35" },
-                    Text = { Text = "CLOSE", FontSize = 16, Align = TextAnchor.MiddleCenter }
-                }, "TestUI");
-                
-                Puts($"[KillaUI] ShowTestUI: Container created with {container.Count} elements");
-                
-                CuiHelper.AddUi(player, container);
-                Puts($"[KillaUI] Test UI shown to {player.displayName} with {container.Count} elements");
-                Puts($"[KillaUI] ========== ShowTestUI COMPLETED ==========");
-            }
-            catch (Exception ex)
-            {
-                PrintError($"[KillaUI] Error in ShowTestUI: {ex}");
-                Puts($"[KillaUI] Exception details: {ex.Message}");
-                Puts($"[KillaUI] Stack trace: {ex.StackTrace}");
-            }
-        }
-        
-        /// <summary>
         /// Show lobby UI with specific tab
         /// </summary>
         public void ShowLobbyUIWithTab(BasePlayer player, string tab)
