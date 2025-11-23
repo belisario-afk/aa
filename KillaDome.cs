@@ -1503,9 +1503,6 @@ namespace Oxide.Plugins
                 ["IsVIP"] = session.Profile.IsVIP
             };
         }
-                ["IsVIP"] = session.Profile.IsVIP
-            };
-        }
         
         #endregion
         
