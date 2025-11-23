@@ -71,6 +71,8 @@ namespace Oxide.Plugins
             public string CurrentEditingWeaponSlot = "primary";
             public string CurrentAttachmentCategory = "scope";
             public int CurrentAttachmentPage = 0;
+            public Dictionary<string, string> ArmorSlotTypes = new Dictionary<string, string>();
+            public Dictionary<string, int> ArmorSlotSkins = new Dictionary<string, int>();
         }
         
         #endregion
@@ -787,8 +789,8 @@ namespace Oxide.Plugins
                     RectTransform = { AnchorMin = $"0.05 {yMin}", AnchorMax = $"0.95 {yMax}" }
                 }, previewPanel);
                 
-                // Get current armor type for this slot (defaults to predefined)
-                string currentArmorItem = GetPlayerArmorType(player.userID, armorSlotNames[i]) ?? defaultArmorItems[i];
+                // Use default armor items for now
+                string currentArmorItem = defaultArmorItems[i];
                 
                 // Armor type cycle buttons (left side)
                 container.Add(new CuiButton
@@ -1015,6 +1017,30 @@ namespace Oxide.Plugins
                 _playerStates[playerId] = new PlayerUIState();
             }
             return _playerStates[playerId];
+        }
+
+        private string GetPlayerArmorType(ulong playerId, string slot)
+        {
+            var state = GetOrCreatePlayerState(playerId);
+            if (state.ArmorSlotTypes.ContainsKey(slot))
+                return state.ArmorSlotTypes[slot];
+            
+            // Return defaults based on slot
+            switch (slot)
+            {
+                case "head": return "metal.facemask";
+                case "chest": return "metal.plate.torso";
+                case "legs": return "roadsign.kilt";
+                case "torso": return "roadsign.jacket";
+                case "hands": return "tactical.gloves";
+                default: return "metal.facemask";
+            }
+        }
+
+        private void SetPlayerArmorType(ulong playerId, string slot, string armorType)
+        {
+            var state = GetOrCreatePlayerState(playerId);
+            state.ArmorSlotTypes[slot] = armorType;
         }
         
         #endregion
