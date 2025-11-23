@@ -629,7 +629,23 @@ namespace Oxide.Plugins
                 {
                     if (player != null && player.IsConnected && KillaUI != null && KillaUI.IsLoaded)
                     {
-                        KillaUI.Call("ShowLobbyUI", player);
+                        try
+                        {
+                            // Try direct method invocation
+                            var killaUIPlugin = KillaUI as dynamic;
+                            if (killaUIPlugin != null)
+                            {
+                                killaUIPlugin.ShowLobbyUI(player);
+                            }
+                            else
+                            {
+                                KillaUI.Call("ShowLobbyUI", player);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            PrintError($"Error showing lobby UI on connect: {ex}");
+                        }
                     }
                 });
                 
@@ -941,8 +957,25 @@ namespace Oxide.Plugins
             
             if (KillaUI != null && KillaUI.IsLoaded)
             {
-                KillaUI.Call("ShowLobbyUI", player);
-                SendReply(arg, "Lobby UI opened");
+                try
+                {
+                    // Try direct method invocation
+                    var killaUIPlugin = KillaUI as dynamic;
+                    if (killaUIPlugin != null)
+                    {
+                        killaUIPlugin.ShowLobbyUI(player);
+                    }
+                    else
+                    {
+                        KillaUI.Call("ShowLobbyUI", player);
+                    }
+                    SendReply(arg, "Lobby UI opened");
+                }
+                catch (Exception ex)
+                {
+                    SendReply(arg, $"Error: {ex.Message}");
+                    PrintError($"Error in kd.open: {ex}");
+                }
             }
             else
             {
@@ -1060,13 +1093,25 @@ namespace Oxide.Plugins
                     {
                         try
                         {
-                            var result = KillaUI.Call("ShowLobbyUI", player);
-                            SendReply(player, "Lobby UI opened");
-                            LogDebug($"ShowLobbyUI called successfully for {player.displayName}, result: {result}");
+                            // Try direct method invocation first
+                            var killaUIPlugin = KillaUI as dynamic;
+                            if (killaUIPlugin != null)
+                            {
+                                killaUIPlugin.ShowLobbyUI(player);
+                                SendReply(player, "Lobby UI opened (direct call)");
+                                LogDebug($"ShowLobbyUI called directly for {player.displayName}");
+                            }
+                            else
+                            {
+                                // Fallback to Call method
+                                var result = KillaUI.Call("ShowLobbyUI", player);
+                                SendReply(player, "Lobby UI opened");
+                                LogDebug($"ShowLobbyUI called successfully for {player.displayName}, result: {result}");
+                            }
                         }
                         catch (Exception ex)
                         {
-                            SendReply(player, $"Error opening UI: {ex.Message}");
+                            SendReply(player, $"Error opening UI. Check console logs.");
                             PrintError($"Error calling ShowLobbyUI: {ex}");
                         }
                     }
@@ -1095,9 +1140,22 @@ namespace Oxide.Plugins
                         try
                         {
                             Puts($"[KillaDome] About to call ShowTestUI...");
-                            var result = KillaUI.Call("ShowTestUI", player);
-                            Puts($"[KillaDome] ShowTestUI call returned: {result}");
-                            SendReply(player, "Test UI called - check console for details");
+                            
+                            // Try direct method invocation
+                            var killaUIPlugin = KillaUI as dynamic;
+                            if (killaUIPlugin != null)
+                            {
+                                killaUIPlugin.ShowTestUI(player);
+                                Puts($"[KillaDome] ShowTestUI called directly");
+                                SendReply(player, "Test UI called (direct) - check for red panel");
+                            }
+                            else
+                            {
+                                // Fallback to Call
+                                var result = KillaUI.Call("ShowTestUI", player);
+                                Puts($"[KillaDome] ShowTestUI call returned: {result}");
+                                SendReply(player, "Test UI called - check console for details");
+                            }
                         }
                         catch (Exception ex)
                         {
