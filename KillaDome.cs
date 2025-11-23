@@ -213,13 +213,13 @@ namespace Oxide.Plugins
                     Rarity = "Epic"
                 },
                 
-                // Pistol Skins
+                // Python Skins
                 new SkinDefinition
                 {
-                    Name = "Pistol Black",
-                    SkinId = "skin_pistol_black",
-                    WeaponId = "pistol",
-                    ImageUrl = "https://i.imgur.com/YourPistolBlackSkin.png",
+                    Name = "Python Black",
+                    SkinId = "skin_python_black",
+                    WeaponId = "python",
+                    ImageUrl = "https://i.imgur.com/YourPythonBlackSkin.png",
                     Cost = 250,
                     Tag = "",
                     Rarity = "Common"
@@ -793,8 +793,28 @@ namespace Oxide.Plugins
                 heldItem.SendNetworkUpdate();
             }
             
-            // Give ammo
-            string ammoType = weaponName == "pistol" ? "ammo.pistol" : "ammo.rifle";
+            // Give ammo based on weapon type
+            string ammoType = "ammo.rifle"; // Default
+            
+            if (_gunConfig.Guns.ContainsKey(weaponName))
+            {
+                var gunShortname = _gunConfig.Guns[weaponName].RustItemShortname;
+                
+                // Determine ammo type based on weapon
+                if (gunShortname.Contains("pistol") || gunShortname == "pistol.python" || gunShortname == "pistol.revolver")
+                {
+                    ammoType = "ammo.pistol";
+                }
+                else if (gunShortname.Contains("shotgun"))
+                {
+                    ammoType = "ammo.shotgun";
+                }
+                else if (gunShortname.Contains("rifle") || gunShortname.Contains("smg") || gunShortname.Contains("lmg"))
+                {
+                    ammoType = "ammo.rifle";
+                }
+            }
+            
             var ammo = ItemManager.CreateByName(ammoType, 250);
             if (ammo != null)
             {
@@ -1389,7 +1409,7 @@ namespace Oxide.Plugins
                 {
                     Name = "Default",
                     Primary = "ak47",
-                    Secondary = "pistol",
+                    Secondary = "python",
                     PrimaryAttachments = new Dictionary<string, string>(),
                     SecondaryAttachments = new Dictionary<string, string>(),
                     Skins = new Dictionary<string, string>()
@@ -1400,7 +1420,7 @@ namespace Oxide.Plugins
             return new Dictionary<string, object>
             {
                 ["Primary"] = loadout.Primary ?? "ak47",
-                ["Secondary"] = loadout.Secondary ?? "pistol",
+                ["Secondary"] = loadout.Secondary ?? "python",
                 ["ArmorHead"] = loadout.ArmorHead,
                 ["ArmorChest"] = loadout.ArmorChest,
                 ["ArmorLegs"] = loadout.ArmorLegs,
@@ -1460,7 +1480,19 @@ namespace Oxide.Plugins
         public Dictionary<string, object> GetPlayerProfile(ulong steamId)
         {
             var session = GetSession(steamId);
-            if (session == null) return null;
+            
+            // Create session on demand if it doesn't exist
+            if (session == null)
+            {
+                var player = BasePlayer.FindByID(steamId);
+                if (player == null) return null;
+                
+                var profile = _saveManager.LoadPlayerProfile(steamId);
+                session = new PlayerSession(player, profile);
+                _activeSessions[steamId] = session;
+                
+                LogDebug($"Created session on demand for {player.displayName}");
+            }
             
             return new Dictionary<string, object>
             {
@@ -1468,6 +1500,9 @@ namespace Oxide.Plugins
                 ["TotalDeaths"] = session.Profile.TotalDeaths,
                 ["Tokens"] = session.Profile.Tokens,
                 ["MatchesPlayed"] = session.Profile.MatchesPlayed,
+                ["IsVIP"] = session.Profile.IsVIP
+            };
+        }
                 ["IsVIP"] = session.Profile.IsVIP
             };
         }
@@ -1741,7 +1776,7 @@ namespace Oxide.Plugins
                 {
                     Name = "Default",
                     Primary = "ak47",
-                    Secondary = "pistol",
+                    Secondary = "python",
                     PrimaryAttachments = new Dictionary<string, string>(),
                     Skins = new Dictionary<string, string>()
                 });
