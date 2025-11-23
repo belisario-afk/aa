@@ -1336,7 +1336,19 @@ namespace Oxide.Plugins
         public Dictionary<string, object> GetSessionData(ulong steamId)
         {
             var session = GetSession(steamId);
-            if (session == null) return null;
+            
+            // Create session on demand if it doesn't exist
+            if (session == null)
+            {
+                var player = BasePlayer.FindByID(steamId);
+                if (player == null) return null;
+                
+                var profile = _saveManager.LoadPlayerProfile(steamId);
+                session = new PlayerSession(player, profile);
+                _activeSessions[steamId] = session;
+                
+                LogDebug($"Created session on demand for {player.displayName}");
+            }
             
             return new Dictionary<string, object>
             {
@@ -1356,13 +1368,39 @@ namespace Oxide.Plugins
         public Dictionary<string, object> GetCurrentLoadout(ulong steamId)
         {
             var session = GetSession(steamId);
-            if (session == null || session.Profile.Loadouts.Count == 0) return null;
+            
+            // Create session on demand if it doesn't exist
+            if (session == null)
+            {
+                var player = BasePlayer.FindByID(steamId);
+                if (player == null) return null;
+                
+                var profile = _saveManager.LoadPlayerProfile(steamId);
+                session = new PlayerSession(player, profile);
+                _activeSessions[steamId] = session;
+                
+                LogDebug($"Created session on demand for {player.displayName}");
+            }
+            
+            // Ensure at least one loadout exists
+            if (session.Profile.Loadouts.Count == 0)
+            {
+                session.Profile.Loadouts.Add(new Loadout
+                {
+                    Name = "Default",
+                    Primary = "ak47",
+                    Secondary = "pistol",
+                    PrimaryAttachments = new Dictionary<string, string>(),
+                    SecondaryAttachments = new Dictionary<string, string>(),
+                    Skins = new Dictionary<string, string>()
+                });
+            }
             
             var loadout = session.Profile.Loadouts[0];
             return new Dictionary<string, object>
             {
-                ["Primary"] = loadout.Primary,
-                ["Secondary"] = loadout.Secondary,
+                ["Primary"] = loadout.Primary ?? "ak47",
+                ["Secondary"] = loadout.Secondary ?? "pistol",
                 ["ArmorHead"] = loadout.ArmorHead,
                 ["ArmorChest"] = loadout.ArmorChest,
                 ["ArmorLegs"] = loadout.ArmorLegs,

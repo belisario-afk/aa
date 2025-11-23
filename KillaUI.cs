@@ -84,7 +84,20 @@ namespace Oxide.Plugins
         /// </summary>
         public void ShowLobbyUIWithTab(BasePlayer player, string tab)
         {
-            if (player == null) return;
+            if (player == null)
+            {
+                PrintWarning("ShowLobbyUIWithTab: player is null");
+                return;
+            }
+            
+            if (KillaDome == null || !KillaDome.IsLoaded)
+            {
+                PrintWarning($"ShowLobbyUIWithTab: KillaDome plugin not available for {player.displayName}");
+                player.ChatMessage("KillaDome plugin not loaded. Please contact an admin.");
+                return;
+            }
+            
+            LogDebug($"ShowLobbyUIWithTab called for {player.displayName}, tab: {tab}");
             
             DestroyUI(player);
             
@@ -151,6 +164,7 @@ namespace Oxide.Plugins
             }
             
             CuiHelper.AddUi(player, container);
+            LogDebug($"UI added for {player.displayName}, elements count: {container.Count}");
         }
         
         /// <summary>
@@ -494,26 +508,41 @@ namespace Oxide.Plugins
             var sessionData = KillaDome?.Call("GetSessionData", player.userID);
             if (sessionData == null)
             {
+                PrintWarning($"GetSessionData returned null for {player.displayName}");
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = "Loading...", FontSize = 16, Align = TextAnchor.MiddleCenter },
+                    Text = { Text = "Error loading session data.\nPlease try again.", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 0.3 0.3 1" },
                     RectTransform = { AnchorMin = "0.3 0.4", AnchorMax = "0.7 0.6" }
                 }, UI_TAB_CONTAINER);
                 return;
             }
             
             var data = sessionData as Dictionary<string, object>;
-            var loadoutData = KillaDome?.Call("GetCurrentLoadout", player.userID) as Dictionary<string, object>;
-            
-            if (loadoutData == null)
+            if (data == null)
             {
+                PrintWarning($"GetSessionData returned invalid type for {player.displayName}");
                 container.Add(new CuiLabel
                 {
-                    Text = { Text = "No loadout available", FontSize = 16, Align = TextAnchor.MiddleCenter },
+                    Text = { Text = "Error: Invalid session data.", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 0.3 0.3 1" },
                     RectTransform = { AnchorMin = "0.3 0.4", AnchorMax = "0.7 0.6" }
                 }, UI_TAB_CONTAINER);
                 return;
             }
+            
+            var loadoutData = KillaDome?.Call("GetCurrentLoadout", player.userID) as Dictionary<string, object>;
+            
+            if (loadoutData == null)
+            {
+                PrintWarning($"GetCurrentLoadout returned null for {player.displayName}");
+                container.Add(new CuiLabel
+                {
+                    Text = { Text = "Error loading loadout.\nPlease try again.", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 0.3 0.3 1" },
+                    RectTransform = { AnchorMin = "0.3 0.4", AnchorMax = "0.7 0.6" }
+                }, UI_TAB_CONTAINER);
+                return;
+            }
+            
+            LogDebug($"ShowLoadoutsTab: Got session and loadout data for {player.displayName}");
             
             // Get editing state
             string editingSlot = data.ContainsKey("EditingWeaponSlot") ? data["EditingWeaponSlot"] as string ?? "primary" : "primary";
