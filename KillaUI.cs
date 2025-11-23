@@ -192,8 +192,14 @@ namespace Oxide.Plugins
             var player = arg.Player();
             if (player == null) return;
             
+            if (KillaDome == null || !KillaDome.IsLoaded)
+            {
+                player.ChatMessage("KillaDome plugin not available!");
+                return;
+            }
+            
             // Call KillaDome plugin to handle queue logic
-            KillaDome?.Call("AddToQueue", player.userID);
+            KillaDome.Call("AddToQueue", player.userID);
             player.ChatMessage("You have joined the queue!");
         }
         
@@ -1066,9 +1072,16 @@ namespace Oxide.Plugins
         #region Helper Methods
         
         private Dictionary<ulong, DateTime> _rateLimitCache = new Dictionary<ulong, DateTime>();
+        private const int RATE_LIMIT_CLEANUP_INTERVAL = 300; // 5 minutes in seconds
         
         private bool CheckRateLimit(ulong steamId)
         {
+            // Clean up old entries periodically to prevent memory leaks
+            if (_rateLimitCache.Count > 100)
+            {
+                CleanupRateLimitCache();
+            }
+            
             if (_rateLimitCache.ContainsKey(steamId))
             {
                 var lastAction = _rateLimitCache[steamId];
@@ -1080,6 +1093,17 @@ namespace Oxide.Plugins
             
             _rateLimitCache[steamId] = DateTime.UtcNow;
             return true;
+        }
+        
+        private void CleanupRateLimitCache()
+        {
+            // Remove entries older than 1 minute
+            var cutoff = DateTime.UtcNow.AddMinutes(-1);
+            var keysToRemove = _rateLimitCache.Where(kvp => kvp.Value < cutoff).Select(kvp => kvp.Key).ToList();
+            foreach (var key in keysToRemove)
+            {
+                _rateLimitCache.Remove(key);
+            }
         }
         
         private void LogDebug(string message)

@@ -572,9 +572,16 @@ namespace Oxide.Plugins
             // Clean up all UI - delegate to KillaUI plugin
             if (KillaUI != null && KillaUI.IsLoaded)
             {
-                foreach (var player in BasePlayer.activePlayerList)
+                try
                 {
-                    KillaUI.Call("DestroyUI", player);
+                    foreach (var player in BasePlayer.activePlayerList)
+                    {
+                        KillaUI.Call("DestroyUI", player);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    PrintWarning($"Error cleaning up UI: {ex.Message}");
                 }
             }
             
