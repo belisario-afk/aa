@@ -222,12 +222,11 @@ namespace Oxide.Plugins
                 
                 CuiHelper.AddUi(player, container);
                 LogDebug($"UI added for {player.displayName}, elements count: {container.Count}");
-                Puts($"[KillaUI] Successfully rendered UI for {player.displayName} with {container.Count} elements");
             }
             catch (Exception ex)
             {
                 PrintError($"Error in ShowLobbyUIWithTab for {player?.displayName}: {ex}");
-                player?.ChatMessage($"Error showing UI: {ex.Message}");
+                player?.ChatMessage("Error showing UI. Please check console logs or contact an admin.");
             }
         }
         
