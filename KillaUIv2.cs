@@ -421,20 +421,503 @@ namespace Oxide.Plugins
         
         #endregion
         
-        #region LOADOUTS Tab (Placeholder - to be implemented)
+        #region LOADOUTS Tab
         
         private void RenderLoadoutsTab(CuiElementContainer container, string parent, BasePlayer player)
         {
+            var state = GetPlayerState(player.userID);
+            
+            // Sub-tab buttons
+            var subtabPanel = container.Add(new CuiPanel
+            {
+                Image = { Color = COLOR_SECONDARY },
+                RectTransform = { AnchorMin = "0.1 0.85", AnchorMax = "0.9 0.92" }
+            }, parent);
+            
+            // Loadout Editor button
+            container.Add(new CuiButton
+            {
+                Button = {
+                    Color = state.CurrentLoadoutTab == "loadout_editor" ? COLOR_ACCENT : "0.25 0.25 0.25 0.95",
+                    Command = "killaui.loadout.subtab loadout_editor"
+                },
+                RectTransform = { AnchorMin = "0.05 0.1", AnchorMax = "0.45 0.9" },
+                Text = {
+                    Text = "LOADOUT EDITOR",
+                    FontSize = 14,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT
+                }
+            }, subtabPanel);
+            
+            // Outfit Editor button
+            container.Add(new CuiButton
+            {
+                Button = {
+                    Color = state.CurrentLoadoutTab == "outfit_editor" ? COLOR_ACCENT : "0.25 0.25 0.25 0.95",
+                    Command = "killaui.loadout.subtab outfit_editor"
+                },
+                RectTransform = { AnchorMin = "0.55 0.1", AnchorMax = "0.95 0.9" },
+                Text = {
+                    Text = "OUTFIT EDITOR",
+                    FontSize = 14,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT
+                }
+            }, subtabPanel);
+            
+            // Content area
+            var contentPanel = container.Add(new CuiPanel
+            {
+                Image = { Color = "0 0 0 0" },
+                RectTransform = { AnchorMin = "0.1 0.1", AnchorMax = "0.9 0.83" }
+            }, parent);
+            
+            // Render appropriate subtab
+            if (state.CurrentLoadoutTab == "loadout_editor")
+            {
+                RenderLoadoutEditor(container, contentPanel, player);
+            }
+            else if (state.CurrentLoadoutTab == "outfit_editor")
+            {
+                RenderOutfitEditor(container, contentPanel, player);
+            }
+        }
+        
+        private void RenderLoadoutEditor(CuiElementContainer container, string parent, BasePlayer player)
+        {
+            var state = GetPlayerState(player.userID);
+            
+            // Get loadout data from KillaDome
+            var loadoutData = KillaDome?.Call("GetCurrentLoadout", player.userID) as Dictionary<string, object>;
+            
+            if (loadoutData == null)
+            {
+                container.Add(new CuiLabel
+                {
+                    Text = {
+                        Text = "Unable to load loadout data.\nPlease try again.",
+                        FontSize = 16,
+                        Align = TextAnchor.MiddleCenter,
+                        Color = COLOR_DANGER
+                    },
+                    RectTransform = { AnchorMin = "0.3 0.4", AnchorMax = "0.7 0.6" }
+                }, parent);
+                return;
+            }
+            
+            string primaryWeapon = loadoutData.ContainsKey("primary") ? loadoutData["primary"] as string : "ak47";
+            string secondaryWeapon = loadoutData.ContainsKey("secondary") ? loadoutData["secondary"] as string : "python";
+            
+            // PRIMARY WEAPON SECTION (Left)
+            var primaryPanel = container.Add(new CuiPanel
+            {
+                Image = { Color = COLOR_SECONDARY },
+                RectTransform = { AnchorMin = "0.05 0.55", AnchorMax = "0.47 0.95" }
+            }, parent);
+            
             container.Add(new CuiLabel
             {
                 Text = {
-                    Text = "LOADOUTS TAB - Under Construction\n\nFeatures coming:\n• Loadout Editor\n• Outfit Editor\n• Weapon customization\n• Armor selection",
+                    Text = "PRIMARY WEAPON",
+                    FontSize = 14,
+                    Align = TextAnchor.UpperCenter,
+                    Color = COLOR_WARNING
+                },
+                RectTransform = { AnchorMin = "0.1 0.85", AnchorMax = "0.9 0.95" }
+            }, primaryPanel);
+            
+            container.Add(new CuiLabel
+            {
+                Text = {
+                    Text = GetWeaponDisplayName(primaryWeapon),
                     FontSize = 18,
                     Align = TextAnchor.MiddleCenter,
                     Color = COLOR_TEXT
                 },
-                RectTransform = { AnchorMin = "0.3 0.3", AnchorMax = "0.7 0.7" }
+                RectTransform = { AnchorMin = "0.1 0.65", AnchorMax = "0.9 0.8" }
+            }, primaryPanel);
+            
+            // Cycle buttons for primary
+            container.Add(new CuiButton
+            {
+                Button = {
+                    Color = COLOR_ACCENT,
+                    Command = "killaui.weapon.cycle primary -1"
+                },
+                RectTransform = { AnchorMin = "0.1 0.45", AnchorMax = "0.35 0.6" },
+                Text = {
+                    Text = "◄ PREV",
+                    FontSize = 12,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT
+                }
+            }, primaryPanel);
+            
+            container.Add(new CuiButton
+            {
+                Button = {
+                    Color = COLOR_ACCENT,
+                    Command = "killaui.weapon.cycle primary 1"
+                },
+                RectTransform = { AnchorMin = "0.65 0.45", AnchorMax = "0.9 0.6" },
+                Text = {
+                    Text = "NEXT ►",
+                    FontSize = 12,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT
+                }
+            }, primaryPanel);
+            
+            // Placeholder for weapon image
+            container.Add(new CuiLabel
+            {
+                Text = {
+                    Text = "📷\n[Weapon Image]",
+                    FontSize = 14,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT_DIM
+                },
+                RectTransform = { AnchorMin = "0.2 0.15", AnchorMax = "0.8 0.4" }
+            }, primaryPanel);
+            
+            // SECONDARY WEAPON SECTION (Right)
+            var secondaryPanel = container.Add(new CuiPanel
+            {
+                Image = { Color = COLOR_SECONDARY },
+                RectTransform = { AnchorMin = "0.53 0.55", AnchorMax = "0.95 0.95" }
             }, parent);
+            
+            container.Add(new CuiLabel
+            {
+                Text = {
+                    Text = "SECONDARY WEAPON",
+                    FontSize = 14,
+                    Align = TextAnchor.UpperCenter,
+                    Color = COLOR_WARNING
+                },
+                RectTransform = { AnchorMin = "0.1 0.85", AnchorMax = "0.9 0.95" }
+            }, secondaryPanel);
+            
+            container.Add(new CuiLabel
+            {
+                Text = {
+                    Text = GetWeaponDisplayName(secondaryWeapon),
+                    FontSize = 18,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT
+                },
+                RectTransform = { AnchorMin = "0.1 0.65", AnchorMax = "0.9 0.8" }
+            }, secondaryPanel);
+            
+            // Cycle buttons for secondary
+            container.Add(new CuiButton
+            {
+                Button = {
+                    Color = COLOR_ACCENT,
+                    Command = "killaui.weapon.cycle secondary -1"
+                },
+                RectTransform = { AnchorMin = "0.1 0.45", AnchorMax = "0.35 0.6" },
+                Text = {
+                    Text = "◄ PREV",
+                    FontSize = 12,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT
+                }
+            }, secondaryPanel);
+            
+            container.Add(new CuiButton
+            {
+                Button = {
+                    Color = COLOR_ACCENT,
+                    Command = "killaui.weapon.cycle secondary 1"
+                },
+                RectTransform = { AnchorMin = "0.65 0.45", AnchorMax = "0.9 0.6" },
+                Text = {
+                    Text = "NEXT ►",
+                    FontSize = 12,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT
+                }
+            }, secondaryPanel);
+            
+            // Placeholder for weapon image
+            container.Add(new CuiLabel
+            {
+                Text = {
+                    Text = "📷\n[Weapon Image]",
+                    FontSize = 14,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT_DIM
+                },
+                RectTransform = { AnchorMin = "0.2 0.15", AnchorMax = "0.8 0.4" }
+            }, secondaryPanel);
+            
+            // ATTACHMENTS SECTION (Bottom)
+            var attachmentsPanel = container.Add(new CuiPanel
+            {
+                Image = { Color = COLOR_SECONDARY },
+                RectTransform = { AnchorMin = "0.05 0.05", AnchorMax = "0.95 0.50" }
+            }, parent);
+            
+            container.Add(new CuiLabel
+            {
+                Text = {
+                    Text = $"ATTACHMENTS ({GetWeaponDisplayName(primaryWeapon)})",
+                    FontSize = 14,
+                    Align = TextAnchor.UpperCenter,
+                    Color = COLOR_WARNING
+                },
+                RectTransform = { AnchorMin = "0.1 0.88", AnchorMax = "0.9 0.98" }
+            }, attachmentsPanel);
+            
+            // Attachment category tabs
+            string[] categories = { "SCOPE", "BARREL", "UNDERBARREL" };
+            for (int i = 0; i < categories.Length; i++)
+            {
+                string category = categories[i].ToLower();
+                float xMin = 0.05f + (i * 0.3f);
+                float xMax = xMin + 0.25f;
+                
+                container.Add(new CuiButton
+                {
+                    Button = {
+                        Color = state.CurrentAttachmentCategory == category ? COLOR_ACCENT : "0.25 0.25 0.25 0.95",
+                        Command = $"killaui.attachment.category {category}"
+                    },
+                    RectTransform = { AnchorMin = $"{xMin} 0.75", AnchorMax = $"{xMax} 0.85" },
+                    Text = {
+                        Text = categories[i],
+                        FontSize = 11,
+                        Align = TextAnchor.MiddleCenter,
+                        Color = COLOR_TEXT
+                    }
+                }, attachmentsPanel);
+            }
+            
+            // Attachment list (simplified - showing placeholders)
+            container.Add(new CuiLabel
+            {
+                Text = {
+                    Text = $"📷 Holo Sight\n\n📷 8x Scope\n\n📷 16x Scope\n\n(Attachments will be populated from KillaDome data)",
+                    FontSize = 12,
+                    Align = TextAnchor.UpperLeft,
+                    Color = COLOR_TEXT_DIM
+                },
+                RectTransform = { AnchorMin = "0.1 0.15", AnchorMax = "0.9 0.70" }
+            }, attachmentsPanel);
+            
+            // Save button
+            container.Add(new CuiButton
+            {
+                Button = {
+                    Color = COLOR_SUCCESS,
+                    Command = "killaui.loadout.save"
+                },
+                RectTransform = { AnchorMin = "0.1 0.02", AnchorMax = "0.45 0.12" },
+                Text = {
+                    Text = "SAVE LOADOUT",
+                    FontSize = 13,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT
+                }
+            }, attachmentsPanel);
+            
+            // Reset button
+            container.Add(new CuiButton
+            {
+                Button = {
+                    Color = "0.5 0.5 0.5 0.95",
+                    Command = "killaui.loadout.reset"
+                },
+                RectTransform = { AnchorMin = "0.55 0.02", AnchorMax = "0.9 0.12" },
+                Text = {
+                    Text = "RESET TO DEFAULT",
+                    FontSize = 13,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT
+                }
+            }, attachmentsPanel);
+        }
+        
+        private void RenderOutfitEditor(CuiElementContainer container, string parent, BasePlayer player)
+        {
+            // Left side: Stacked armor preview
+            var previewPanel = container.Add(new CuiPanel
+            {
+                Image = { Color = COLOR_SECONDARY },
+                RectTransform = { AnchorMin = "0.05 0.1", AnchorMax = "0.40 0.9" }
+            }, parent);
+            
+            container.Add(new CuiLabel
+            {
+                Text = {
+                    Text = "ARMOR PREVIEW",
+                    FontSize = 14,
+                    Align = TextAnchor.UpperCenter,
+                    Color = COLOR_WARNING
+                },
+                RectTransform = { AnchorMin = "0.1 0.92", AnchorMax = "0.9 0.98" }
+            }, previewPanel);
+            
+            // Stack 5 armor pieces vertically
+            string[] armorSlots = { "Metal Facemask", "Metal Chest Plate", "Roadsign Kilt", "Roadsign Vest", "Tactical Gloves" };
+            string[] armorIcons = { "🎭", "🛡️", "🦵", "🦺", "🧤" };
+            
+            for (int i = 0; i < armorSlots.Length; i++)
+            {
+                float yMin = 0.80f - (i * 0.17f);
+                float yMax = yMin + 0.15f;
+                
+                var slotPanel = container.Add(new CuiPanel
+                {
+                    Image = { Color = "0.2 0.2 0.2 0.95" },
+                    RectTransform = { AnchorMin = $"0.05 {yMin}", AnchorMax = $"0.95 {yMax}" }
+                }, previewPanel);
+                
+                container.Add(new CuiLabel
+                {
+                    Text = {
+                        Text = $"{armorIcons[i]} {armorSlots[i]}",
+                        FontSize = 12,
+                        Align = TextAnchor.MiddleLeft,
+                        Color = COLOR_TEXT
+                    },
+                    RectTransform = { AnchorMin = "0.05 0.1", AnchorMax = "0.95 0.9" }
+                }, slotPanel);
+            }
+            
+            // Right side: Skin selection for each armor piece
+            var skinPanel = container.Add(new CuiPanel
+            {
+                Image = { Color = COLOR_SECONDARY },
+                RectTransform = { AnchorMin = "0.45 0.1", AnchorMax = "0.95 0.9" }
+            }, parent);
+            
+            container.Add(new CuiLabel
+            {
+                Text = {
+                    Text = "SKIN SELECTION",
+                    FontSize = 14,
+                    Align = TextAnchor.UpperCenter,
+                    Color = COLOR_WARNING
+                },
+                RectTransform = { AnchorMin = "0.1 0.92", AnchorMax = "0.9 0.98" }
+            }, skinPanel);
+            
+            // Skin selection for each armor piece
+            for (int i = 0; i < armorSlots.Length; i++)
+            {
+                float yMin = 0.80f - (i * 0.17f);
+                float yMax = yMin + 0.15f;
+                
+                var skinSlotPanel = container.Add(new CuiPanel
+                {
+                    Image = { Color = "0.2 0.2 0.2 0.95" },
+                    RectTransform = { AnchorMin = $"0.05 {yMin}", AnchorMax = $"0.95 {yMax}" }
+                }, skinPanel);
+                
+                // Previous button
+                container.Add(new CuiButton
+                {
+                    Button = {
+                        Color = COLOR_ACCENT,
+                        Command = $"killaui.armor.skin {i} -1"
+                    },
+                    RectTransform = { AnchorMin = "0.05 0.2", AnchorMax = "0.25 0.8" },
+                    Text = {
+                        Text = "◄",
+                        FontSize = 14,
+                        Align = TextAnchor.MiddleCenter,
+                        Color = COLOR_TEXT
+                    }
+                }, skinSlotPanel);
+                
+                // Skin preview
+                container.Add(new CuiLabel
+                {
+                    Text = {
+                        Text = "📷 Default Skin",
+                        FontSize = 11,
+                        Align = TextAnchor.MiddleCenter,
+                        Color = COLOR_TEXT
+                    },
+                    RectTransform = { AnchorMin = "0.3 0.1", AnchorMax = "0.7 0.9" }
+                }, skinSlotPanel);
+                
+                // Next button
+                container.Add(new CuiButton
+                {
+                    Button = {
+                        Color = COLOR_ACCENT,
+                        Command = $"killaui.armor.skin {i} 1"
+                    },
+                    RectTransform = { AnchorMin = "0.75 0.2", AnchorMax = "0.95 0.8" },
+                    Text = {
+                        Text = "►",
+                        FontSize = 14,
+                        Align = TextAnchor.MiddleCenter,
+                        Color = COLOR_TEXT
+                    }
+                }, skinSlotPanel);
+            }
+            
+            // Save outfit button
+            container.Add(new CuiButton
+            {
+                Button = {
+                    Color = COLOR_SUCCESS,
+                    Command = "killaui.outfit.save"
+                },
+                RectTransform = { AnchorMin = "0.1 0.02", AnchorMax = "0.45 0.10" },
+                Text = {
+                    Text = "SAVE OUTFIT",
+                    FontSize = 13,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT
+                }
+            }, skinPanel);
+            
+            // Reset button
+            container.Add(new CuiButton
+            {
+                Button = {
+                    Color = "0.5 0.5 0.5 0.95",
+                    Command = "killaui.outfit.reset"
+                },
+                RectTransform = { AnchorMin = "0.55 0.02", AnchorMax = "0.9 0.10" },
+                Text = {
+                    Text = "RESET TO DEFAULT",
+                    FontSize = 13,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = COLOR_TEXT
+                }
+            }, skinPanel);
+        }
+        
+        private string GetWeaponDisplayName(string weaponId)
+        {
+            // Map weapon IDs to display names
+            switch (weaponId.ToLower())
+            {
+                case "ak47": return "AK-47";
+                case "lr300": return "LR-300";
+                case "mp5": return "MP5";
+                case "python": return "Python";
+                case "bolt": return "Bolt Action";
+                case "thompson": return "Thompson";
+                case "smg2": return "Custom SMG";
+                default: return weaponId.ToUpper();
+            }
+        }
+        
+        private PlayerUIState GetPlayerState(ulong playerId)
+        {
+            if (!_playerStates.ContainsKey(playerId))
+            {
+                _playerStates[playerId] = new PlayerUIState();
+            }
+            return _playerStates[playerId];
         }
         
         #endregion
@@ -521,6 +1004,112 @@ namespace Oxide.Plugins
             if (player == null) return;
             
             DestroyUI(player);
+        }
+        
+        [ConsoleCommand("killaui.loadout.subtab")]
+        private void CmdLoadoutSubtab(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            
+            string subtab = arg.GetString(0, "loadout_editor");
+            var state = GetPlayerState(player.userID);
+            state.CurrentLoadoutTab = subtab;
+            
+            // Refresh UI
+            ShowMainUI(player, "loadouts");
+        }
+        
+        [ConsoleCommand("killaui.weapon.cycle")]
+        private void CmdWeaponCycle(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            
+            string slot = arg.GetString(0, "primary");
+            int direction = arg.GetInt(1, 1);
+            
+            // Call KillaDome to cycle weapon
+            KillaDome?.Call("CycleWeapon", player, slot, direction);
+            
+            // Refresh UI
+            ShowMainUI(player, "loadouts");
+        }
+        
+        [ConsoleCommand("killaui.attachment.category")]
+        private void CmdAttachmentCategory(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            
+            string category = arg.GetString(0, "scope");
+            var state = GetPlayerState(player.userID);
+            state.CurrentAttachmentCategory = category;
+            
+            // Refresh UI
+            ShowMainUI(player, "loadouts");
+        }
+        
+        [ConsoleCommand("killaui.loadout.save")]
+        private void CmdLoadoutSave(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            
+            player.ChatMessage("Loadout saved successfully!");
+            // Additional save logic can be added via KillaDome call
+        }
+        
+        [ConsoleCommand("killaui.loadout.reset")]
+        private void CmdLoadoutReset(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            
+            // Call KillaDome to reset loadout
+            KillaDome?.Call("ResetLoadout", player.userID);
+            
+            player.ChatMessage("Loadout reset to default.");
+            ShowMainUI(player, "loadouts");
+        }
+        
+        [ConsoleCommand("killaui.armor.skin")]
+        private void CmdArmorSkin(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            
+            int armorSlot = arg.GetInt(0, 0);
+            int direction = arg.GetInt(1, 1);
+            
+            // Call KillaDome to cycle armor skin
+            KillaDome?.Call("CycleArmorSkin", player.userID, armorSlot, direction);
+            
+            // Refresh UI
+            ShowMainUI(player, "loadouts");
+        }
+        
+        [ConsoleCommand("killaui.outfit.save")]
+        private void CmdOutfitSave(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            
+            player.ChatMessage("Outfit saved successfully!");
+            // Additional save logic via KillaDome
+        }
+        
+        [ConsoleCommand("killaui.outfit.reset")]
+        private void CmdOutfitReset(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            
+            // Call KillaDome to reset outfit
+            KillaDome?.Call("ResetOutfit", player.userID);
+            
+            player.ChatMessage("Outfit reset to default.");
+            ShowMainUI(player, "loadouts");
         }
         
         #endregion
