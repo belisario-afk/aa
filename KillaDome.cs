@@ -38,6 +38,9 @@ namespace Oxide.Plugins
         [PluginReference]
         private Plugin KillaUI;
         
+        [PluginReference]
+        private Plugin KillaUIv2;
+        
         private DomeManager _domeManager;
         private LoadoutEditor _loadoutEditor;
         private AttachmentSystem _attachmentSystem;
@@ -1060,7 +1063,8 @@ namespace Oxide.Plugins
             if (args.Length == 0)
             {
                 SendReply(player, "KillaDome Commands:\n" +
-                    "/kd open - Open lobby UI\n" +
+                    "/kd open - Open lobby UI (current version)\n" +
+                    "/kd v2 - Open NEW redesigned UI (testing)\n" +
                     "/kd stats - View your stats\n" +
                     "/kd help - Show this help");
                 return;
@@ -1074,7 +1078,7 @@ namespace Oxide.Plugins
                         try
                         {
                             var result = KillaUI.Call("ShowLobbyUI", player);
-                            SendReply(player, "Lobby UI opened");
+                            SendReply(player, "Lobby UI opened (v1)");
                             LogDebug($"ShowLobbyUI called successfully for {player.displayName}, result: {result}");
                         }
                         catch (Exception ex)
@@ -1087,6 +1091,29 @@ namespace Oxide.Plugins
                     {
                         SendReply(player, "KillaUI plugin not loaded");
                         PrintWarning($"KillaUI plugin not available. KillaUI: {KillaUI}, IsLoaded: {KillaUI?.IsLoaded}");
+                    }
+                    break;
+                    
+                case "v2":
+                case "openv2":
+                    if (KillaUIv2 != null && KillaUIv2.IsLoaded)
+                    {
+                        try
+                        {
+                            var result = KillaUIv2.Call("ShowLobbyUI", player);
+                            SendReply(player, "New Lobby UI opened (v2) - Testing new design!");
+                            LogDebug($"ShowLobbyUI v2 called successfully for {player.displayName}, result: {result}");
+                        }
+                        catch (Exception ex)
+                        {
+                            SendReply(player, $"Error opening UI v2. Check console logs.");
+                            PrintError($"Error calling ShowLobbyUI v2: {ex}");
+                        }
+                    }
+                    else
+                    {
+                        SendReply(player, "KillaUIv2 plugin not loaded");
+                        PrintWarning($"KillaUIv2 plugin not available. KillaUIv2: {KillaUIv2}, IsLoaded: {KillaUIv2?.IsLoaded}");
                     }
                     break;
                     
