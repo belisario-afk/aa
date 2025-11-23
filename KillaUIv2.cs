@@ -488,26 +488,34 @@ namespace Oxide.Plugins
         {
             var state = GetPlayerState(player.userID);
             
-            // Get loadout data from KillaDome
-            var loadoutData = KillaDome?.Call("GetCurrentLoadout", player.userID) as Dictionary<string, object>;
+            // Get loadout data from KillaDome with proper error handling
+            string primaryWeapon = "rifle.ak";
+            string secondaryWeapon = "python";
             
-            if (loadoutData == null)
+            try
             {
-                container.Add(new CuiLabel
+                var loadoutDataRaw = KillaDome?.Call("GetCurrentLoadout", player.userID);
+                
+                if (loadoutDataRaw != null)
                 {
-                    Text = {
-                        Text = "Unable to load loadout data.\nPlease try again.",
-                        FontSize = 16,
-                        Align = TextAnchor.MiddleCenter,
-                        Color = COLOR_DANGER
-                    },
-                    RectTransform = { AnchorMin = "0.3 0.4", AnchorMax = "0.7 0.6" }
-                }, parent);
-                return;
+                    var loadoutData = loadoutDataRaw as Dictionary<string, object>;
+                    if (loadoutData != null && loadoutData.Count > 0)
+                    {
+                        if (loadoutData.ContainsKey("primary") && loadoutData["primary"] != null)
+                        {
+                            primaryWeapon = loadoutData["primary"].ToString();
+                        }
+                        if (loadoutData.ContainsKey("secondary") && loadoutData["secondary"] != null)
+                        {
+                            secondaryWeapon = loadoutData["secondary"].ToString();
+                        }
+                    }
+                }
             }
-            
-            string primaryWeapon = loadoutData.ContainsKey("primary") ? loadoutData["primary"] as string : "ak47";
-            string secondaryWeapon = loadoutData.ContainsKey("secondary") ? loadoutData["secondary"] as string : "python";
+            catch (System.Exception ex)
+            {
+                Puts($"[KillaUIv2] Error loading loadout data: {ex.Message}");
+            }
             
             // PRIMARY WEAPON SECTION (Left)
             var primaryPanel = container.Add(new CuiPanel
