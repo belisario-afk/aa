@@ -768,11 +768,15 @@ namespace Oxide.Plugins
                 RectTransform = { AnchorMin = "0.1 0.92", AnchorMax = "0.9 0.98" }
             }, previewPanel);
             
-            // Stack 5 armor pieces vertically
-            string[] armorSlots = { "Metal Facemask", "Metal Chest Plate", "Roadsign Kilt", "Roadsign Vest", "Tactical Gloves" };
-            string[] armorIcons = { "🎭", "🛡️", "🦵", "🦺", "🧤" };
+            // Stack 5 armor pieces vertically with ImageLibrary integration
+            string[] armorSlotNames = { "head", "chest", "legs", "torso", "hands" };
+            string[] armorDisplayNames = { "Metal Facemask", "Metal Chest Plate", "Roadsign Kilt", "Roadsign Vest", "Tactical Gloves" };
+            string[] defaultArmorItems = { "metal.facemask", "metal.plate.torso", "roadsign.kilt", "roadsign.jacket", "tactical.gloves" };
             
-            for (int i = 0; i < armorSlots.Length; i++)
+            // Get ImageLibrary plugin reference
+            var imageLibrary = plugins.Find("ImageLibrary");
+            
+            for (int i = 0; i < armorSlotNames.Length; i++)
             {
                 float yMin = 0.80f - (i * 0.17f);
                 float yMax = yMin + 0.15f;
@@ -783,15 +787,100 @@ namespace Oxide.Plugins
                     RectTransform = { AnchorMin = $"0.05 {yMin}", AnchorMax = $"0.95 {yMax}" }
                 }, previewPanel);
                 
+                // Get current armor type for this slot (defaults to predefined)
+                string currentArmorItem = GetPlayerArmorType(player.userID, armorSlotNames[i]) ?? defaultArmorItems[i];
+                
+                // Armor type cycle buttons (left side)
+                container.Add(new CuiButton
+                {
+                    Button = {
+                        Color = COLOR_ACCENT,
+                        Command = $"killaui.armor.type {armorSlotNames[i]} -1"
+                    },
+                    RectTransform = { AnchorMin = "0.02 0.2", AnchorMax = "0.12 0.8" },
+                    Text = {
+                        Text = "◄",
+                        FontSize = 12,
+                        Align = TextAnchor.MiddleCenter,
+                        Color = COLOR_TEXT
+                    }
+                }, slotPanel);
+                
+                // Armor image from ImageLibrary
+                if (imageLibrary != null)
+                {
+                    try
+                    {
+                        string imageUrl = (string)imageLibrary.Call("GetImage", currentArmorItem, (ulong)0);
+                        if (!string.IsNullOrEmpty(imageUrl))
+                        {
+                            container.Add(new CuiElement
+                            {
+                                Name = $"armor_image_{i}",
+                                Parent = slotPanel,
+                                Components =
+                                {
+                                    new CuiRawImageComponent { Url = imageUrl },
+                                    new CuiRectTransformComponent { AnchorMin = "0.15 0.1", AnchorMax = "0.35 0.9" }
+                                }
+                            });
+                        }
+                        else
+                        {
+                            // Fallback if image not found
+                            container.Add(new CuiLabel
+                            {
+                                Text = { Text = "📷", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = COLOR_TEXT },
+                                RectTransform = { AnchorMin = "0.15 0.1", AnchorMax = "0.35 0.9" }
+                            }, slotPanel);
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback on error
+                        container.Add(new CuiLabel
+                        {
+                            Text = { Text = "📷", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = COLOR_TEXT },
+                            RectTransform = { AnchorMin = "0.15 0.1", AnchorMax = "0.35 0.9" }
+                        }, slotPanel);
+                    }
+                }
+                else
+                {
+                    // ImageLibrary not available - show placeholder
+                    container.Add(new CuiLabel
+                    {
+                        Text = { Text = "📷", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = COLOR_TEXT },
+                        RectTransform = { AnchorMin = "0.15 0.1", AnchorMax = "0.35 0.9" }
+                    }, slotPanel);
+                }
+                
+                // Armor name label
                 container.Add(new CuiLabel
                 {
                     Text = {
-                        Text = $"{armorIcons[i]} {armorSlots[i]}",
-                        FontSize = 12,
+                        Text = GetArmorDisplayName(currentArmorItem),
+                        FontSize = 11,
                         Align = TextAnchor.MiddleLeft,
                         Color = COLOR_TEXT
                     },
-                    RectTransform = { AnchorMin = "0.05 0.1", AnchorMax = "0.95 0.9" }
+                    RectTransform = { AnchorMin = "0.38 0.1", AnchorMax = "0.85 0.9" }
+                }, slotPanel);
+                
+                // Armor type cycle buttons (right side)
+                container.Add(new CuiButton
+                {
+                    Button = {
+                        Color = COLOR_ACCENT,
+                        Command = $"killaui.armor.type {armorSlotNames[i]} 1"
+                    },
+                    RectTransform = { AnchorMin = "0.88 0.2", AnchorMax = "0.98 0.8" },
+                    Text = {
+                        Text = "►",
+                        FontSize = 12,
+                        Align = TextAnchor.MiddleCenter,
+                        Color = COLOR_TEXT
+                    }
                 }, slotPanel);
             }
             
