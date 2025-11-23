@@ -35,8 +35,13 @@ namespace Oxide.Plugins
         [PluginReference]
         private Plugin ImageLibrary;
         
+        [PluginReference]
+        private Plugin KillaUI;
+        
+        [PluginReference]
+        private Plugin KillaUIv2;
+        
         private DomeManager _domeManager;
-        private LobbyUI _lobbyUI;
         private LoadoutEditor _loadoutEditor;
         private AttachmentSystem _attachmentSystem;
         private WeaponProgression _weaponProgression;
@@ -51,6 +56,7 @@ namespace Oxide.Plugins
         
         private PluginConfig _config;
         private GunConfig _gunConfig;
+        private OutfitConfig _outfitConfig;
         private Dictionary<ulong, PlayerSession> _activeSessions = new Dictionary<ulong, PlayerSession>();
         
         private const string PERMISSION_ADMIN = "killadome.admin";
@@ -63,6 +69,12 @@ namespace Oxide.Plugins
         /// <summary>
         /// CENTRALIZED GUN AND IMAGE CONFIGURATION
         /// This is the ONLY place you need to add/edit guns and their images!
+        /// 
+        /// AUTOMATIC FEATURES:
+        /// - When you add a new gun to Guns dictionary, it automatically appears in the Loadout Tab
+        /// - When you add a new skin to Skins list, it automatically appears in the Store Tab
+        /// - No need to edit any other code - everything updates automatically!
+        /// 
         /// Changes here automatically apply to both Store Tab and Loadout Tab.
         /// </summary>
         public class GunConfig
@@ -83,20 +95,6 @@ namespace Oxide.Plugins
                     RustItemShortname = "rifle.ak",
                     ImageUrl = "https://i.imgur.com/YourAK47Image.png"
                 },
-                ["m249"] = new GunDefinition
-                {
-                    Id = "m249",
-                    DisplayName = "M249",
-                    RustItemShortname = "lmg.m249",
-                    ImageUrl = "https://i.imgur.com/YourM249Image.png"
-                },
-                ["pistol"] = new GunDefinition
-                {
-                    Id = "pistol",
-                    DisplayName = "Semi-Automatic Pistol",
-                    RustItemShortname = "pistol.semiauto",
-                    ImageUrl = "https://i.imgur.com/YourPistolImage.png"
-                },
                 ["lr300"] = new GunDefinition
                 {
                     Id = "lr300",
@@ -104,12 +102,61 @@ namespace Oxide.Plugins
                     RustItemShortname = "rifle.lr300",
                     ImageUrl = "https://i.imgur.com/YourLR300Image.png"
                 },
+                ["m249"] = new GunDefinition
+                {
+                    Id = "m249",
+                    DisplayName = "M249",
+                    RustItemShortname = "lmg.m249",
+                    ImageUrl = "https://i.imgur.com/YourM249Image.png"
+                },
                 ["mp5"] = new GunDefinition
                 {
                     Id = "mp5",
                     DisplayName = "MP5A4",
                     RustItemShortname = "smg.mp5",
                     ImageUrl = "https://i.imgur.com/YourMP5Image.png"
+                },
+                ["thompson"] = new GunDefinition
+                {
+                    Id = "thompson",
+                    DisplayName = "Thompson",
+                    RustItemShortname = "smg.thompson",
+                    ImageUrl = "https://i.imgur.com/YourThompsonImage.png"
+                },
+                ["python"] = new GunDefinition
+                {
+                    Id = "python",
+                    DisplayName = "Python Revolver",
+                    RustItemShortname = "pistol.python",
+                    ImageUrl = "https://i.imgur.com/YourPythonImage.png"
+                },
+                ["bolt"] = new GunDefinition
+                {
+                    Id = "bolt",
+                    DisplayName = "Bolt Action Rifle",
+                    RustItemShortname = "rifle.bolt",
+                    ImageUrl = "https://i.imgur.com/YourBoltImage.png"
+                },
+                ["sarpistol"] = new GunDefinition
+                {
+                    Id = "sarpistol",
+                    DisplayName = "Semi-Auto Pistol",
+                    RustItemShortname = "pistol.semiauto",
+                    ImageUrl = "https://i.imgur.com/YourSARImage.png"
+                },
+                ["custom"] = new GunDefinition
+                {
+                    Id = "custom",
+                    DisplayName = "Custom SMG",
+                    RustItemShortname = "smg.2",
+                    ImageUrl = "https://i.imgur.com/YourCustomImage.png"
+                },
+                ["m39"] = new GunDefinition
+                {
+                    Id = "m39",
+                    DisplayName = "M39 Rifle",
+                    RustItemShortname = "rifle.m39",
+                    ImageUrl = "https://i.imgur.com/YourM39Image.png"
                 }
             };
             
@@ -119,23 +166,42 @@ namespace Oxide.Plugins
             // - SkinId: Rust workshop skin ID or custom identifier
             // - WeaponId: Which gun this skin is for (must match a gun Id above)
             // - ImageUrl: Direct URL to the skin preview image
+            // - Cost: Price in Blood Tokens (default: 300)
+            // - Tag: Optional badge like "NEW", "POPULAR", "HOT" (default: "")
+            // - Rarity: Rarity tier like "Common", "Rare", "Epic", "Legendary" (default: "Common")
             
             public List<SkinDefinition> Skins = new List<SkinDefinition>
             {
                 // AK-47 Skins
                 new SkinDefinition
                 {
+                    Name = "AK-47 Tempered",
+                    SkinId = "3602286295",
+                    WeaponId = "ak47",
+                    ImageUrl = "https://i.imgur.com/YourAK47TemperedSkin.png",
+                    Cost = 650,
+                    Tag = "NEW",
+                    Rarity = "Legendary"
+                },
+                new SkinDefinition
+                {
                     Name = "AK-47 Neon",
                     SkinId = "3102802323",
                     WeaponId = "ak47",
-                    ImageUrl = "https://i.imgur.com/YourAK47NeonSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourAK47NeonSkin.png",
+                    Cost = 500,
+                    Tag = "POPULAR",
+                    Rarity = "Epic"
                 },
                 new SkinDefinition
                 {
                     Name = "AK-47 Classic",
                     SkinId = "skin_ak47_classic",
                     WeaponId = "ak47",
-                    ImageUrl = "https://i.imgur.com/YourAK47ClassicSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourAK47ClassicSkin.png",
+                    Cost = 400,
+                    Tag = "",
+                    Rarity = "Rare"
                 },
                 
                 // M249 Skins
@@ -144,16 +210,22 @@ namespace Oxide.Plugins
                     Name = "M249 Chrome",
                     SkinId = "skin_m249_chrome",
                     WeaponId = "m249",
-                    ImageUrl = "https://i.imgur.com/YourM249ChromeSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourM249ChromeSkin.png",
+                    Cost = 450,
+                    Tag = "",
+                    Rarity = "Epic"
                 },
                 
-                // Pistol Skins
+                // Python Skins
                 new SkinDefinition
                 {
-                    Name = "Pistol Black",
-                    SkinId = "skin_pistol_black",
-                    WeaponId = "pistol",
-                    ImageUrl = "https://i.imgur.com/YourPistolBlackSkin.png"
+                    Name = "Python Black",
+                    SkinId = "skin_python_black",
+                    WeaponId = "python",
+                    ImageUrl = "https://i.imgur.com/YourPythonBlackSkin.png",
+                    Cost = 250,
+                    Tag = "",
+                    Rarity = "Common"
                 },
                 
                 // LR-300 Skins
@@ -162,7 +234,10 @@ namespace Oxide.Plugins
                     Name = "LR-300 Gold",
                     SkinId = "skin_lr300_gold",
                     WeaponId = "lr300",
-                    ImageUrl = "https://i.imgur.com/YourLR300GoldSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourLR300GoldSkin.png",
+                    Cost = 600,
+                    Tag = "",
+                    Rarity = "Legendary"
                 },
                 
                 // MP5 Skins
@@ -171,7 +246,22 @@ namespace Oxide.Plugins
                     Name = "MP5 Tactical",
                     SkinId = "skin_mp5_tactical",
                     WeaponId = "mp5",
-                    ImageUrl = "https://i.imgur.com/YourMP5TacticalSkin.png"
+                    ImageUrl = "https://i.imgur.com/YourMP5TacticalSkin.png",
+                    Cost = 350,
+                    Tag = "",
+                    Rarity = "Rare"
+                },
+                
+                // Example: Add a new skin here and it will automatically appear in Store Tab!
+                new SkinDefinition
+                {
+                    Name = "Thompson Dragon",
+                    SkinId = "skin_thompson_dragon",
+                    WeaponId = "thompson",
+                    ImageUrl = "https://i.imgur.com/YourThompsonDragonSkin.png",
+                    Cost = 550,
+                    Tag = "HOT",
+                    Rarity = "Epic"
                 }
             };
             
@@ -213,6 +303,124 @@ namespace Oxide.Plugins
             public string SkinId { get; set; }
             public string WeaponId { get; set; }
             public string ImageUrl { get; set; }
+            public int Cost { get; set; } = 300; // Default cost
+            public string Tag { get; set; } = ""; // Optional tag like "NEW", "POPULAR", etc.
+            public string Rarity { get; set; } = "Common"; // Rarity tier
+        }
+        
+        // ===== OUTFIT/ARMOR CONFIGURATION =====
+        public class OutfitConfig
+        {
+            public List<ArmorItem> Armors = new List<ArmorItem>
+            {
+                // Head Armor
+                new ArmorItem
+                {
+                    Name = "Metal Facemask",
+                    ItemShortname = "metal.facemask",
+                    Slot = "head",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/mVY2Uav.png",
+                    Cost = 300,
+                    Rarity = "Common"
+                },
+                new ArmorItem
+                {
+                    Name = "Coffee Can Helmet",
+                    ItemShortname = "coffeecan.helmet",
+                    Slot = "head",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourCoffeeCanImage.png",
+                    Cost = 250,
+                    Rarity = "Common"
+                },
+                
+                // Chest Armor
+                new ArmorItem
+                {
+                    Name = "Metal Chest Plate",
+                    ItemShortname = "metal.plate.torso",
+                    Slot = "chest",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourMetalChestImage.png",
+                    Cost = 400,
+                    Rarity = "Rare"
+                },
+                new ArmorItem
+                {
+                    Name = "Road Sign Jacket",
+                    ItemShortname = "roadsign.jacket",
+                    Slot = "chest",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourRoadSignImage.png",
+                    Cost = 300,
+                    Rarity = "Common"
+                },
+                
+                // Legs Armor
+                new ArmorItem
+                {
+                    Name = "Heavy Plate Pants",
+                    ItemShortname = "heavy.plate.pants",
+                    Slot = "legs",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourHeavyPantsImage.png",
+                    Cost = 400,
+                    Rarity = "Rare"
+                },
+                new ArmorItem
+                {
+                    Name = "Road Sign Kilt",
+                    ItemShortname = "roadsign.kilt",
+                    Slot = "legs",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourRoadSignKiltImage.png",
+                    Cost = 300,
+                    Rarity = "Common"
+                },
+                
+                // Hands/Gloves
+                new ArmorItem
+                {
+                    Name = "Tactical Gloves",
+                    ItemShortname = "tactical.gloves",
+                    Slot = "hands",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourTacticalGlovesImage.png",
+                    Cost = 200,
+                    Rarity = "Common"
+                },
+                
+                // Feet/Boots
+                new ArmorItem
+                {
+                    Name = "Heavy Plate Boots",
+                    ItemShortname = "shoes.boots",
+                    Slot = "feet",
+                    SkinId = "0",
+                    ImageUrl = "https://i.imgur.com/YourBootsImage.png",
+                    Cost = 250,
+                    Rarity = "Common"
+                }
+            };
+            
+            public ArmorItem[] GetArmorsBySlot(string slot)
+            {
+                return Armors.Where(a => a.Slot == slot).ToArray();
+            }
+        }
+        
+        public class ArmorItem
+        {
+            public string Name { get; set; }
+            public string DisplayName => Name; // Alias for consistency
+            public string ItemShortname { get; set; }
+            public string Slot { get; set; } // "head", "chest", "legs", "hands", "feet"
+            public string SkinId { get; set; } = "0";
+            public string ImageUrl { get; set; }
+            public int Cost { get; set; } = 300;
+            public string Rarity { get; set; } = "Common";
+            public string Tag { get; set; } = "";
         }
         
         #endregion
@@ -224,8 +432,11 @@ namespace Oxide.Plugins
             [JsonProperty("Lobby Spawn Position")]
             public Vector3 LobbySpawnPosition { get; set; } = new Vector3(0, 100, 0);
             
-            [JsonProperty("Arena Spawn Position")]
-            public Vector3 ArenaSpawnPosition { get; set; } = new Vector3(0, 100, 500);
+            [JsonProperty("Arena Spawn Positions")]
+            public List<Vector3> ArenaSpawnPositions { get; set; } = new List<Vector3>
+            {
+                new Vector3(0, 100, 500)
+            };
             
             [JsonProperty("Starting Blood Tokens")]
             public int StartingTokens { get; set; } = 500;
@@ -293,6 +504,7 @@ namespace Oxide.Plugins
             
             // Initialize gun configuration
             _gunConfig = new GunConfig();
+            _outfitConfig = new OutfitConfig();
             
             // Initialize all systems
             _saveManager = new SaveManager(this, _config);
@@ -305,7 +517,6 @@ namespace Oxide.Plugins
             _forgeStation = new ForgeStationSystem(this, _config, _tokenEconomy, _attachmentSystem, _weaponProgression);
             _loadoutEditor = new LoadoutEditor(this, _attachmentSystem);
             _storeAPI = new StoreAPI(this, _config, _tokenEconomy);
-            _lobbyUI = new LobbyUI(this, _loadoutEditor, _forgeStation, _storeAPI);
             _domeManager = new DomeManager(this, _config);
             _telemetry = new TelemetrySystem(this);
             
@@ -314,16 +525,80 @@ namespace Oxide.Plugins
         
         private void OnServerInitialized()
         {
+            Puts("[KillaDome] OnServerInitialized called");
+            Puts($"[KillaDome] KillaUI reference is null: {KillaUI == null}");
+            Puts($"[KillaDome] KillaUI is loaded: {KillaUI?.IsLoaded}");
+            
+            if (KillaUI != null && KillaUI.IsLoaded)
+            {
+                Puts("[KillaDome] Successfully connected to KillaUI plugin");
+            }
+            else
+            {
+                PrintWarning("[KillaDome] KillaUI plugin not found or not loaded. UI features will not work.");
+            }
+            
             timer.Every(_config.AutoSaveInterval, () => AutoSaveAllPlayers());
             LogDebug("Auto-save timer started");
+            
+            // Load images after server is ready
+            timer.Once(5f, () => LoadImages());
+        }
+        
+        private void LoadImages()
+        {
+            if (ImageLibrary == null || !ImageLibrary.IsLoaded)
+            {
+                PrintWarning("ImageLibrary not loaded. Images will not display. Please install ImageLibrary plugin.");
+                return;
+            }
+            
+            // Load gun images
+            foreach (var gun in _gunConfig.Guns.Values)
+            {
+                if (!string.IsNullOrEmpty(gun.ImageUrl))
+                {
+                    ImageLibrary.Call("AddImage", gun.ImageUrl, gun.ImageUrl);
+                }
+            }
+            
+            // Load skin images
+            foreach (var skin in _gunConfig.Skins)
+            {
+                if (!string.IsNullOrEmpty(skin.ImageUrl))
+                {
+                    ImageLibrary.Call("AddImage", skin.ImageUrl, skin.ImageUrl);
+                }
+            }
+            
+            // Load armor images
+            foreach (var armor in _outfitConfig.Armors)
+            {
+                if (!string.IsNullOrEmpty(armor.ImageUrl))
+                {
+                    ImageLibrary.Call("AddImage", armor.ImageUrl, armor.ImageUrl);
+                }
+            }
+            
+            Puts($"Loaded {_gunConfig.Guns.Count} gun images, {_gunConfig.Skins.Count} skin images, and {_outfitConfig.Armors.Count} armor images into ImageLibrary");
         }
         
         private void Unload()
         {
-            // Clean up all UI
-            foreach (var player in BasePlayer.activePlayerList)
+            // Clean up all UI - delegate to KillaUI plugin
+            if (KillaUI != null && KillaUI.IsLoaded)
             {
-                _lobbyUI?.DestroyUI(player);
+                try
+                {
+                    foreach (var player in BasePlayer.activePlayerList)
+                    {
+                        KillaUI.Call("DestroyUI", player);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    PrintWarning($"Error cleaning up UI: {ex.Message}");
+                }
             }
             
             // Save all player data
@@ -339,10 +614,12 @@ namespace Oxide.Plugins
         
         private void OnPlayerConnected(BasePlayer player)
         {
-            if (player == null) return;
+            if (player == null || _saveManager == null) return;
             
             NextTick(() =>
             {
+                if (player == null || !player.IsConnected) return;
+                
                 var profile = _saveManager.LoadPlayerProfile(player.userID);
                 var session = new PlayerSession(player, profile);
                 _activeSessions[player.userID] = session;
@@ -350,8 +627,21 @@ namespace Oxide.Plugins
                 // Teleport to lobby
                 TeleportToLobby(player);
                 
-                // Show lobby UI
-                timer.Once(1f, () => _lobbyUI.ShowLobbyUI(player));
+                // Show lobby UI via KillaUI plugin
+                timer.Once(1f, () =>
+                {
+                    if (player != null && player.IsConnected && KillaUI != null && KillaUI.IsLoaded)
+                    {
+                        try
+                        {
+                            KillaUI.Call("ShowLobbyUI", player);
+                        }
+                        catch (Exception ex)
+                        {
+                            PrintError($"Error showing lobby UI on connect: {ex}");
+                        }
+                    }
+                });
                 
                 LogDebug($"Player {player.displayName} ({player.userID}) connected");
             });
@@ -361,11 +651,15 @@ namespace Oxide.Plugins
         {
             if (player == null) return;
             
-            _lobbyUI?.DestroyUI(player);
+            // Destroy UI via KillaUI plugin
+            if (KillaUI != null && KillaUI.IsLoaded)
+            {
+                KillaUI.Call("DestroyUI", player);
+            }
             
             if (_activeSessions.TryGetValue(player.userID, out var session))
             {
-                _saveManager.SavePlayerProfile(session.Profile);
+                _saveManager?.SavePlayerProfile(session.Profile);
                 _activeSessions.Remove(player.userID);
             }
             
@@ -374,10 +668,10 @@ namespace Oxide.Plugins
         
         private void OnEntityDeath(BasePlayer victim, HitInfo info)
         {
-            if (victim == null) return;
+            if (victim == null || _tokenEconomy == null || _telemetry == null) return;
             
             var attacker = info?.InitiatorPlayer;
-            if (attacker != null && attacker != victim)
+            if (attacker != null && attacker != victim && attacker.IsConnected)
             {
                 // Award tokens for kill
                 _tokenEconomy.AwardTokens(attacker.userID, _config.TokensPerKill);
@@ -412,7 +706,20 @@ namespace Oxide.Plugins
         private void TeleportToArena(BasePlayer player)
         {
             if (player == null || !player.IsConnected) return;
-            player.Teleport(_config.ArenaSpawnPosition);
+            
+            // Select random spawn point from configured arena spawns
+            Vector3 spawnPos;
+            if (_config.ArenaSpawnPositions != null && _config.ArenaSpawnPositions.Count > 0)
+            {
+                spawnPos = _config.ArenaSpawnPositions[UnityEngine.Random.Range(0, _config.ArenaSpawnPositions.Count)];
+            }
+            else
+            {
+                // Fallback to default if no spawns configured
+                spawnPos = new Vector3(0, 100, 500);
+            }
+            
+            player.Teleport(spawnPos);
             
             // Apply loadout when entering arena
             ApplyLoadout(player);
@@ -434,6 +741,9 @@ namespace Oxide.Plugins
             // Give secondary weapon
             GiveWeapon(player, loadout.Secondary, loadout.SecondaryAttachments, loadout.Skins);
             
+            // Give equipped armor/outfit
+            GiveArmor(player, loadout);
+            
             LogDebug($"Applied loadout to {player.displayName}");
         }
         
@@ -441,17 +751,19 @@ namespace Oxide.Plugins
         {
             if (string.IsNullOrEmpty(weaponName)) return;
             
-            // Map weapon names to item short names
-            string itemName = weaponName switch
+            // Get weapon info from centralized config
+            string itemName = "rifle.ak"; // Default fallback
+            if (_gunConfig?.Guns != null && _gunConfig.Guns.TryGetValue(weaponName, out var gunDef))
             {
-                "ak47" => "rifle.ak",
-                "m249" => "lmg.m249",
-                "pistol" => "pistol.semiauto",
-                _ => "rifle.ak"
-            };
+                itemName = gunDef.RustItemShortname;
+            }
             
             var item = ItemManager.CreateByName(itemName, 1);
-            if (item == null) return;
+            if (item == null)
+            {
+                LogDebug($"Failed to create weapon: {itemName}");
+                return;
+            }
             
             // Apply skin if exists
             if (skins != null && skins.TryGetValue(weaponName, out string skinId))
@@ -467,7 +779,7 @@ namespace Oxide.Plugins
             if (attachments != null && attachments.Count > 0)
             {
                 var heldEntity = item.GetHeldEntity() as BaseProjectile;
-                if (heldEntity != null)
+                if (heldEntity != null && item.contents != null)
                 {
                     foreach (var attachmentEntry in attachments)
                     {
@@ -478,7 +790,10 @@ namespace Oxide.Plugins
                             if (attachmentItem != null)
                             {
                                 // Add attachment to weapon's content container
-                                attachmentItem.MoveToContainer(item.contents);
+                                if (!attachmentItem.MoveToContainer(item.contents))
+                                {
+                                    attachmentItem.Remove(); // Clean up if can't add
+                                }
                             }
                         }
                     }
@@ -486,7 +801,12 @@ namespace Oxide.Plugins
             }
             
             // Give item to player
-            player.inventory.GiveItem(item);
+            if (!player.inventory.GiveItem(item))
+            {
+                LogDebug($"Failed to give weapon {itemName} to {player.displayName} - inventory full?");
+                item.Remove(); // Clean up item if can't give
+                return;
+            }
             
             // If item was given to belt, ensure visual update
             var heldItem = item.GetHeldEntity();
@@ -496,8 +816,28 @@ namespace Oxide.Plugins
                 heldItem.SendNetworkUpdate();
             }
             
-            // Give ammo
-            string ammoType = weaponName == "pistol" ? "ammo.pistol" : "ammo.rifle";
+            // Give ammo based on weapon type
+            string ammoType = "ammo.rifle"; // Default
+            
+            if (_gunConfig.Guns.ContainsKey(weaponName))
+            {
+                var gunShortname = _gunConfig.Guns[weaponName].RustItemShortname;
+                
+                // Determine ammo type based on weapon
+                if (gunShortname.Contains("pistol") || gunShortname == "pistol.python" || gunShortname == "pistol.revolver")
+                {
+                    ammoType = "ammo.pistol";
+                }
+                else if (gunShortname.Contains("shotgun"))
+                {
+                    ammoType = "ammo.shotgun";
+                }
+                else if (gunShortname.Contains("rifle") || gunShortname.Contains("smg") || gunShortname.Contains("lmg"))
+                {
+                    ammoType = "ammo.rifle";
+                }
+            }
+            
             var ammo = ItemManager.CreateByName(ammoType, 250);
             if (ammo != null)
             {
@@ -505,13 +845,76 @@ namespace Oxide.Plugins
             }
         }
         
+        private void GiveArmor(BasePlayer player, Loadout loadout)
+        {
+            if (player == null || loadout == null) return;
+            
+            // Give head armor
+            if (!string.IsNullOrEmpty(loadout.ArmorHead))
+            {
+                GiveArmorPiece(player, loadout.ArmorHead);
+            }
+            
+            // Give chest armor
+            if (!string.IsNullOrEmpty(loadout.ArmorChest))
+            {
+                GiveArmorPiece(player, loadout.ArmorChest);
+            }
+            
+            // Give legs armor
+            if (!string.IsNullOrEmpty(loadout.ArmorLegs))
+            {
+                GiveArmorPiece(player, loadout.ArmorLegs);
+            }
+            
+            // Give hands armor
+            if (!string.IsNullOrEmpty(loadout.ArmorHands))
+            {
+                GiveArmorPiece(player, loadout.ArmorHands);
+            }
+            
+            // Give feet armor
+            if (!string.IsNullOrEmpty(loadout.ArmorFeet))
+            {
+                GiveArmorPiece(player, loadout.ArmorFeet);
+            }
+            
+            LogDebug($"Applied armor to {player.displayName}");
+        }
+        
+        private void GiveArmorPiece(BasePlayer player, string armorShortname)
+        {
+            if (string.IsNullOrEmpty(armorShortname)) return;
+            
+            var item = ItemManager.CreateByName(armorShortname, 1);
+            if (item == null)
+            {
+                LogDebug($"Failed to create armor item: {armorShortname}");
+                return;
+            }
+            
+            // Try to move to wear container (for clothing/armor)
+            if (!item.MoveToContainer(player.inventory.containerWear))
+            {
+                // If wear container is full or item can't be worn, give to main inventory
+                player.inventory.GiveItem(item);
+            }
+            
+            LogDebug($"Gave armor piece {armorShortname} to {player.displayName}");
+        }
+        
         private void AutoSaveAllPlayers()
         {
+            if (_saveManager == null) return;
+            
             int saved = 0;
             foreach (var session in _activeSessions.Values)
             {
-                _saveManager.SavePlayerProfile(session.Profile);
-                saved++;
+                if (session?.Profile != null)
+                {
+                    _saveManager.SavePlayerProfile(session.Profile);
+                    saved++;
+                }
             }
             LogDebug($"Auto-saved {saved} player profiles");
         }
@@ -546,8 +949,23 @@ namespace Oxide.Plugins
                 return;
             }
             
-            _lobbyUI.ShowLobbyUI(player);
-            SendReply(arg, "Lobby UI opened");
+            if (KillaUI != null && KillaUI.IsLoaded)
+            {
+                try
+                {
+                    KillaUI.Call("ShowLobbyUI", player);
+                    SendReply(arg, "Lobby UI opened");
+                }
+                catch (Exception ex)
+                {
+                    SendReply(arg, $"Error: {ex.Message}");
+                    PrintError($"Error in kd.open: {ex}");
+                }
+            }
+            else
+            {
+                SendReply(arg, "KillaUI plugin not loaded");
+            }
         }
         
         [ConsoleCommand("kd.start")]
@@ -645,7 +1063,8 @@ namespace Oxide.Plugins
             if (args.Length == 0)
             {
                 SendReply(player, "KillaDome Commands:\n" +
-                    "/kd open - Open lobby UI\n" +
+                    "/kd open - Open lobby UI (current version)\n" +
+                    "/kd v2 - Open NEW redesigned UI (testing)\n" +
                     "/kd stats - View your stats\n" +
                     "/kd help - Show this help");
                 return;
@@ -654,8 +1073,48 @@ namespace Oxide.Plugins
             switch (args[0].ToLower())
             {
                 case "open":
-                    _lobbyUI.ShowLobbyUI(player);
-                    SendReply(player, "Lobby UI opened");
+                    if (KillaUI != null && KillaUI.IsLoaded)
+                    {
+                        try
+                        {
+                            var result = KillaUI.Call("ShowLobbyUI", player);
+                            SendReply(player, "Lobby UI opened (v1)");
+                            LogDebug($"ShowLobbyUI called successfully for {player.displayName}, result: {result}");
+                        }
+                        catch (Exception ex)
+                        {
+                            SendReply(player, $"Error opening UI. Check console logs.");
+                            PrintError($"Error calling ShowLobbyUI: {ex}");
+                        }
+                    }
+                    else
+                    {
+                        SendReply(player, "KillaUI plugin not loaded");
+                        PrintWarning($"KillaUI plugin not available. KillaUI: {KillaUI}, IsLoaded: {KillaUI?.IsLoaded}");
+                    }
+                    break;
+                    
+                case "v2":
+                case "openv2":
+                    if (KillaUIv2 != null && KillaUIv2.IsLoaded)
+                    {
+                        try
+                        {
+                            var result = KillaUIv2.Call("ShowLobbyUI", player);
+                            SendReply(player, "New Lobby UI opened (v2) - Testing new design!");
+                            LogDebug($"ShowLobbyUI v2 called successfully for {player.displayName}, result: {result}");
+                        }
+                        catch (Exception ex)
+                        {
+                            SendReply(player, $"Error opening UI v2. Check console logs.");
+                            PrintError($"Error calling ShowLobbyUI v2: {ex}");
+                        }
+                    }
+                    else
+                    {
+                        SendReply(player, "KillaUIv2 plugin not loaded");
+                        PrintWarning($"KillaUIv2 plugin not available. KillaUIv2: {KillaUIv2}, IsLoaded: {KillaUIv2?.IsLoaded}");
+                    }
                     break;
                     
                 case "stats":
@@ -679,202 +1138,30 @@ namespace Oxide.Plugins
         
         #endregion
         
-        #region UI Console Commands
+        #region Public API for KillaUI Plugin
         
-        [ConsoleCommand("killadome.close")]
-        private void CmdUIClose(ConsoleSystem.Arg arg)
+        /// <summary>
+        /// Add player to queue - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("AddToQueue")]
+        public void AddToQueue(ulong steamId)
         {
-            var player = arg.Player();
-            if (player == null) return;
-            _lobbyUI.DestroyUI(player);
+            _domeManager?.AddToQueue(steamId);
         }
         
-        [ConsoleCommand("killadome.tab")]
-        private void CmdUITab(ConsoleSystem.Arg arg)
+        /// <summary>
+        /// Cycle weapon selection - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("CycleWeapon")]
+        public void CycleWeapon(BasePlayer player, string slot, int direction)
         {
-            var player = arg.Player();
-            if (player == null || !arg.HasArgs(1)) return;
-            
-            string tab = arg.Args[0].ToLower();
-            _lobbyUI.ShowLobbyUIWithTab(player, tab);
-            
-            LogDebug($"Player {player.displayName} opened tab: {tab}");
-        }
-        
-        [ConsoleCommand("killadome.joinqueue")]
-        private void CmdUIJoinQueue(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
             if (player == null) return;
             
-            _domeManager.AddToQueue(player.userID);
-            SendReply(player, "You have joined the queue!");
-        }
-        
-        [ConsoleCommand("killadome.weapon.prev")]
-        private void CmdWeaponPrev(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null || !arg.HasArgs(1)) return;
-            
-            if (!_antiExploit.CheckRateLimit(player.userID))
-            {
-                SendReply(player, "Please slow down!");
-                return;
-            }
-            
-            string slot = arg.Args[0]; // "primary" or "secondary"
-            CycleWeapon(player, slot, -1);
-            _lobbyUI.ShowLobbyUIWithTab(player, "loadouts");
-        }
-        
-        [ConsoleCommand("killadome.weapon.next")]
-        private void CmdWeaponNext(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null || !arg.HasArgs(1)) return;
-            
-            if (!_antiExploit.CheckRateLimit(player.userID))
-            {
-                SendReply(player, "Please slow down!");
-                return;
-            }
-            
-            string slot = arg.Args[0]; // "primary" or "secondary"
-            CycleWeapon(player, slot, 1);
-            _lobbyUI.ShowLobbyUIWithTab(player, "loadouts");
-        }
-        
-        [ConsoleCommand("killadome.purchase")]
-        private void CmdPurchase(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null || !arg.HasArgs(2)) return;
-            
-            if (!_antiExploit.CheckRateLimit(player.userID))
-            {
-                SendReply(player, "Please slow down!");
-                return;
-            }
-            
-            string itemId = arg.Args[0];
-            if (!int.TryParse(arg.Args[1], out int cost))
-            {
-                SendReply(player, "Invalid cost");
-                return;
-            }
-            
-            var session = GetSession(player.userID);
-            if (session == null)
-            {
-                // Create session if it doesn't exist
-                var profile = _saveManager.LoadPlayerProfile(player.userID);
-                session = new PlayerSession(player, profile);
-                _activeSessions[player.userID] = session;
-            }
-            
-            if (session.Profile.Tokens < cost)
-            {
-                SendReply(player, $"Insufficient tokens! You need {cost} but only have {session.Profile.Tokens}.");
-                return;
-            }
-            
-            if (_storeAPI.PurchaseItem(player.userID, itemId, cost))
-            {
-                SendReply(player, $"Successfully purchased {itemId}!");
-                _saveManager.SavePlayerProfile(session.Profile);
-                _lobbyUI.ShowLobbyUIWithTab(player, "store");
-            }
-            else
-            {
-                SendReply(player, "Purchase failed!");
-            }
-        }
-        
-        [ConsoleCommand("killadome.applyskin")]
-        private void CmdApplySkin(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null || !arg.HasArgs(2)) return;
-            
-            if (!_antiExploit.CheckRateLimit(player.userID))
-            {
-                SendReply(player, "Please slow down!");
-                return;
-            }
-            
-            string weapon = arg.Args[0]; // "primary" or "secondary"
-            string skinId = arg.Args[1];
-            
-            var session = GetSession(player.userID);
-            if (session == null || session.Profile.Loadouts.Count == 0) return;
-            
-            // Check if player owns the skin
-            if (!session.Profile.OwnedSkins.Contains(skinId))
-            {
-                SendReply(player, "You don't own this skin!");
-                return;
-            }
-            
-            var loadout = session.Profile.Loadouts[0];
-            string weaponName = weapon == "primary" ? loadout.Primary : loadout.Secondary;
-            
-            // Apply skin to weapon
-            loadout.Skins[weaponName] = skinId;
-            _saveManager.SavePlayerProfile(session.Profile);
-            
-            SendReply(player, $"Skin applied to {weaponName}!");
-            _lobbyUI.ShowLobbyUIWithTab(player, "loadouts");
-        }
-        
-        [ConsoleCommand("killadome.applyattachment")]
-        private void CmdApplyAttachment(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null || !arg.HasArgs(3)) return;
-            
-            if (!_antiExploit.CheckRateLimit(player.userID))
-            {
-                SendReply(player, "Please slow down!");
-                return;
-            }
-            
-            string weapon = arg.Args[0]; // "primary" or "secondary"
-            string attachmentSlot = arg.Args[1]; // "optic", "barrel", "magazine", "grip"
-            string attachmentId = arg.Args[2];
-            
-            var session = GetSession(player.userID);
-            if (session == null || session.Profile.Loadouts.Count == 0) return;
-            
-            // Check if player owns the attachment (stored in OwnedSkins list for simplicity)
-            if (!session.Profile.OwnedSkins.Contains(attachmentId))
-            {
-                SendReply(player, "You don't own this attachment!");
-                return;
-            }
-            
-            var loadout = session.Profile.Loadouts[0];
-            var attachments = weapon == "primary" ? loadout.PrimaryAttachments : loadout.SecondaryAttachments;
-            
-            // Apply attachment
-            attachments[attachmentSlot] = attachmentId;
-            _saveManager.SavePlayerProfile(session.Profile);
-            
-            SendReply(player, $"Attachment applied!");
-            _lobbyUI.ShowLobbyUIWithTab(player, "loadouts");
-        }
-        
-        #endregion
-        
-        #region Helper Methods
-        
-        private void CycleWeapon(BasePlayer player, string slot, int direction)
-        {
             var session = GetSession(player.userID);
             if (session == null || session.Profile.Loadouts.Count == 0) return;
             
             var loadout = session.Profile.Loadouts[0];
-            string[] availableWeapons = _gunConfig.GetAllGunIds(); // Get weapons from centralized config
+            string[] availableWeapons = _gunConfig.GetAllGunIds();
             
             string currentWeapon = slot == "primary" ? loadout.Primary : loadout.Secondary;
             int currentIndex = Array.IndexOf(availableWeapons, currentWeapon);
@@ -897,36 +1184,507 @@ namespace Oxide.Plugins
             LogDebug($"Player {player.displayName} changed {slot} weapon to {newWeapon}");
         }
         
-        [ConsoleCommand("killadome.attachcat")]
-        private void CmdAttachmentCategory(ConsoleSystem.Arg arg)
+        /// <summary>
+        /// Purchase item - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("PurchaseItem")]
+        public bool PurchaseItem(ulong steamId, string itemId, int cost)
         {
-            var player = arg.Player();
-            if (player == null || !arg.HasArgs(1)) return;
+            var session = GetSession(steamId);
+            if (session == null)
+            {
+                var player = BasePlayer.FindByID(steamId);
+                if (player == null) return false; // Player must be online
+                
+                var profile = _saveManager.LoadPlayerProfile(steamId);
+                session = new PlayerSession(player, profile);
+                _activeSessions[steamId] = session;
+            }
             
-            string category = arg.Args[0].ToLower(); // "scopes", "silencers", "underbarrel"
-            if (category != "scopes" && category != "silencers" && category != "underbarrel") return;
+            if (session.Profile.Tokens < cost)
+            {
+                return false;
+            }
             
-            var session = GetSession(player.userID);
-            if (session == null) return;
+            if (_storeAPI.PurchaseItem(steamId, itemId, cost))
+            {
+                _saveManager.SavePlayerProfile(session.Profile);
+                return true;
+            }
             
-            session.SelectedAttachmentCategory = category;
-            _lobbyUI.ShowLobbyUIWithTab(player, "loadouts");
+            return false;
         }
         
-        [ConsoleCommand("killadome.editweapon")]
-        private void CmdEditWeapon(ConsoleSystem.Arg arg)
+        /// <summary>
+        /// Purchase armor - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("PurchaseArmor")]
+        public bool PurchaseArmor(ulong steamId, string itemShortname, int cost)
         {
-            var player = arg.Player();
-            if (player == null || !arg.HasArgs(1)) return;
+            var session = GetSession(steamId);
+            if (session == null)
+            {
+                var player = BasePlayer.FindByID(steamId);
+                if (player == null) return false; // Player must be online
+                
+                var profile = _saveManager.LoadPlayerProfile(steamId);
+                session = new PlayerSession(player, profile);
+                _activeSessions[steamId] = session;
+            }
             
-            string slot = arg.Args[0].ToLower(); // "primary" or "secondary"
-            if (slot != "primary" && slot != "secondary") return;
+            if (session.Profile.OwnedArmor.Contains(itemShortname))
+            {
+                return false;
+            }
             
-            var session = GetSession(player.userID);
+            if (session.Profile.Tokens < cost)
+            {
+                return false;
+            }
+            
+            session.Profile.Tokens -= cost;
+            session.Profile.OwnedArmor.Add(itemShortname);
+            _saveManager.SavePlayerProfile(session.Profile);
+            
+            return true;
+        }
+        
+        /// <summary>
+        /// Apply skin to weapon - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("ApplySkin")]
+        public bool ApplySkin(ulong steamId, string weapon, string skinId)
+        {
+            var session = GetSession(steamId);
+            if (session == null || session.Profile.Loadouts.Count == 0) return false;
+            
+            if (!session.Profile.OwnedSkins.Contains(skinId))
+            {
+                return false;
+            }
+            
+            var loadout = session.Profile.Loadouts[0];
+            string weaponName = weapon == "primary" ? loadout.Primary : loadout.Secondary;
+            
+            loadout.Skins[weaponName] = skinId;
+            _saveManager.SavePlayerProfile(session.Profile);
+            
+            return true;
+        }
+        
+        /// <summary>
+        /// Apply attachment to weapon - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("ApplyAttachment")]
+        public bool ApplyAttachment(ulong steamId, string weapon, string attachmentSlot, string attachmentId)
+        {
+            var session = GetSession(steamId);
+            if (session == null || session.Profile.Loadouts.Count == 0) return false;
+            
+            if (!session.Profile.OwnedSkins.Contains(attachmentId))
+            {
+                return false;
+            }
+            
+            var loadout = session.Profile.Loadouts[0];
+            var attachments = weapon == "primary" ? loadout.PrimaryAttachments : loadout.SecondaryAttachments;
+            
+            attachments[attachmentSlot] = attachmentId;
+            _saveManager.SavePlayerProfile(session.Profile);
+            
+            return true;
+        }
+        
+        /// <summary>
+        /// Set attachment category - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("SetAttachmentCategory")]
+        public void SetAttachmentCategory(ulong steamId, string category)
+        {
+            var session = GetSession(steamId);
+            if (session != null)
+            {
+                session.SelectedAttachmentCategory = category;
+            }
+        }
+        
+        /// <summary>
+        /// Set editing weapon slot - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("SetEditingWeaponSlot")]
+        public void SetEditingWeaponSlot(ulong steamId, string slot)
+        {
+            var session = GetSession(steamId);
+            if (session != null)
+            {
+                session.EditingWeaponSlot = slot;
+            }
+        }
+        
+        /// <summary>
+        /// Set store category - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("SetStoreCategory")]
+        public void SetStoreCategory(ulong steamId, string category)
+        {
+            var session = GetSession(steamId);
+            if (session != null)
+            {
+                session.SelectedStoreCategory = category;
+                session.GunsStorePage = 0;
+                session.SkinsStorePage = 0;
+            }
+        }
+        
+        /// <summary>
+        /// Change store page - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("ChangeStorePage")]
+        public void ChangeStorePage(ulong steamId, string direction)
+        {
+            var session = GetSession(steamId);
             if (session == null) return;
             
-            session.EditingWeaponSlot = slot;
-            _lobbyUI.ShowLobbyUIWithTab(player, "loadouts");
+            string category = session.SelectedStoreCategory ?? "guns";
+            
+            if (category == "guns")
+            {
+                int itemsPerPage = 6;
+                int totalItems = _gunConfig.Guns.Count;
+                int maxPage = (int)Math.Ceiling((double)totalItems / itemsPerPage) - 1;
+                
+                if (direction == "next" && session.GunsStorePage < maxPage)
+                    session.GunsStorePage++;
+                else if (direction == "prev" && session.GunsStorePage > 0)
+                    session.GunsStorePage--;
+            }
+            else if (category == "skins")
+            {
+                int itemsPerPage = 12;
+                int totalItems = _gunConfig.Skins.Count + 3;
+                int maxPage = (int)Math.Ceiling((double)totalItems / itemsPerPage) - 1;
+                
+                if (direction == "next" && session.SkinsStorePage < maxPage)
+                    session.SkinsStorePage++;
+                else if (direction == "prev" && session.SkinsStorePage > 0)
+                    session.SkinsStorePage--;
+            }
+        }
+        
+        /// <summary>
+        /// Set loadout tab - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("SetLoadoutTab")]
+        public void SetLoadoutTab(ulong steamId, string tab)
+        {
+            var session = GetSession(steamId);
+            if (session != null)
+            {
+                session.SelectedLoadoutTab = tab;
+            }
+        }
+        
+        /// <summary>
+        /// Cycle armor - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("CycleArmor")]
+        public void CycleArmor(ulong steamId, string slot, int direction)
+        {
+            var session = GetSession(steamId);
+            if (session == null || session.Profile.Loadouts.Count == 0) return;
+            
+            var loadout = session.Profile.Loadouts[0];
+            
+            var ownedArmor = _outfitConfig.Armors
+                .Where(a => a.Slot == slot && session.Profile.OwnedArmor.Contains(a.ItemShortname))
+                .ToArray();
+            
+            if (ownedArmor.Length == 0) return;
+            
+            string currentArmorShortname = slot switch
+            {
+                "head" => loadout.ArmorHead,
+                "chest" => loadout.ArmorChest,
+                "legs" => loadout.ArmorLegs,
+                "hands" => loadout.ArmorHands,
+                "feet" => loadout.ArmorFeet,
+                _ => null
+            };
+            
+            int currentIndex = Array.FindIndex(ownedArmor, a => a.ItemShortname == currentArmorShortname);
+            if (currentIndex == -1) currentIndex = 0;
+            
+            int newIndex = (currentIndex + direction + ownedArmor.Length) % ownedArmor.Length;
+            string newArmor = ownedArmor[newIndex].ItemShortname;
+            
+            switch (slot)
+            {
+                case "head": loadout.ArmorHead = newArmor; break;
+                case "chest": loadout.ArmorChest = newArmor; break;
+                case "legs": loadout.ArmorLegs = newArmor; break;
+                case "hands": loadout.ArmorHands = newArmor; break;
+                case "feet": loadout.ArmorFeet = newArmor; break;
+            }
+        }
+        
+        /// <summary>
+        /// Get session data for UI - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("GetSessionData")]
+        public Dictionary<string, object> GetSessionData(ulong steamId)
+        {
+            var session = GetSession(steamId);
+            
+            // Create session on demand if it doesn't exist
+            if (session == null)
+            {
+                var player = BasePlayer.FindByID(steamId);
+                if (player == null) return null;
+                
+                var profile = _saveManager.LoadPlayerProfile(steamId);
+                session = new PlayerSession(player, profile);
+                _activeSessions[steamId] = session;
+                
+                LogDebug($"Created session on demand for {player.displayName}");
+            }
+            
+            return new Dictionary<string, object>
+            {
+                ["Tokens"] = session.Profile.Tokens,
+                ["EditingWeaponSlot"] = session.EditingWeaponSlot,
+                ["SelectedLoadoutTab"] = session.SelectedLoadoutTab,
+                ["SelectedAttachmentCategory"] = session.SelectedAttachmentCategory,
+                ["SelectedStoreCategory"] = session.SelectedStoreCategory,
+                ["GunsStorePage"] = session.GunsStorePage,
+                ["SkinsStorePage"] = session.SkinsStorePage
+            };
+        }
+        
+        /// <summary>
+        /// Get current loadout data for UI - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("GetCurrentLoadout")]
+        public Dictionary<string, object> GetCurrentLoadout(ulong steamId)
+        {
+            var session = GetSession(steamId);
+            
+            // Create session on demand if it doesn't exist
+            if (session == null)
+            {
+                var player = BasePlayer.FindByID(steamId);
+                if (player == null) return null;
+                
+                var profile = _saveManager.LoadPlayerProfile(steamId);
+                session = new PlayerSession(player, profile);
+                _activeSessions[steamId] = session;
+                
+                LogDebug($"Created session on demand for {player.displayName}");
+            }
+            
+            // Ensure at least one loadout exists
+            if (session.Profile.Loadouts.Count == 0)
+            {
+                session.Profile.Loadouts.Add(new Loadout
+                {
+                    Name = "Default",
+                    Primary = "ak47",
+                    Secondary = "python",
+                    PrimaryAttachments = new Dictionary<string, string>(),
+                    SecondaryAttachments = new Dictionary<string, string>(),
+                    Skins = new Dictionary<string, string>()
+                });
+            }
+            
+            var loadout = session.Profile.Loadouts[0];
+            return new Dictionary<string, object>
+            {
+                ["Primary"] = loadout.Primary ?? "ak47",
+                ["Secondary"] = loadout.Secondary ?? "python",
+                ["ArmorHead"] = loadout.ArmorHead,
+                ["ArmorChest"] = loadout.ArmorChest,
+                ["ArmorLegs"] = loadout.ArmorLegs,
+                ["ArmorHands"] = loadout.ArmorHands,
+                ["ArmorFeet"] = loadout.ArmorFeet
+            };
+        }
+        
+        /// <summary>
+        /// Get weapon info for UI - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("GetWeaponInfo")]
+        public Dictionary<string, object> GetWeaponInfo(string weaponId)
+        {
+            if (_gunConfig.Guns.ContainsKey(weaponId))
+            {
+                var gun = _gunConfig.Guns[weaponId];
+                return new Dictionary<string, object>
+                {
+                    ["DisplayName"] = gun.DisplayName,
+                    ["ImageUrl"] = gun.ImageUrl,
+                    ["RustItemShortname"] = gun.RustItemShortname
+                };
+            }
+            
+            return new Dictionary<string, object>
+            {
+                ["DisplayName"] = weaponId.ToUpper(),
+                ["ImageUrl"] = "",
+                ["RustItemShortname"] = weaponId
+            };
+        }
+        
+        /// <summary>
+        /// Get available guns for store - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("GetAvailableGuns")]
+        public List<Dictionary<string, object>> GetAvailableGuns()
+        {
+            var result = new List<Dictionary<string, object>>();
+            
+            foreach (var gun in _gunConfig.Guns.Values)
+            {
+                result.Add(new Dictionary<string, object>
+                {
+                    ["Id"] = gun.Id,
+                    ["DisplayName"] = gun.DisplayName,
+                    ["ImageUrl"] = gun.ImageUrl,
+                    ["Cost"] = 500
+                });
+            }
+            
+            return result;
+        }
+        
+        /// <summary>
+        /// Get player profile data for UI - called by KillaUI plugin
+        /// </summary>
+        [HookMethod("GetPlayerProfile")]
+        public Dictionary<string, object> GetPlayerProfile(ulong steamId)
+        {
+            var session = GetSession(steamId);
+            
+            // Create session on demand if it doesn't exist
+            if (session == null)
+            {
+                var player = BasePlayer.FindByID(steamId);
+                if (player == null) return null;
+                
+                var profile = _saveManager.LoadPlayerProfile(steamId);
+                session = new PlayerSession(player, profile);
+                _activeSessions[steamId] = session;
+                
+                LogDebug($"Created session on demand for {player.displayName}");
+            }
+            
+            return new Dictionary<string, object>
+            {
+                ["TotalKills"] = session.Profile.TotalKills,
+                ["TotalDeaths"] = session.Profile.TotalDeaths,
+                ["Tokens"] = session.Profile.Tokens,
+                ["MatchesPlayed"] = session.Profile.MatchesPlayed,
+                ["IsVIP"] = session.Profile.IsVIP
+            };
+        }
+        
+        #endregion
+        
+        #region Helper Methods
+        
+        [ChatCommand("kdlobby")]
+        private void CmdSetLobbySpawn(BasePlayer player, string command, string[] args)
+        {
+            if (player == null) return;
+            
+            if (!permission.UserHasPermission(player.UserIDString, PERMISSION_ADMIN))
+            {
+                SendReply(player, "<color=#FF0000>Error:</color> You don't have permission to use this command!");
+                return;
+            }
+            
+            if (args.Length == 0 || args[0].ToLower() != "set")
+            {
+                SendReply(player, "<color=#00FF00>Lobby Spawn:</color> Usage: /kdlobby set");
+                return;
+            }
+            
+            // Set lobby spawn to player's current position
+            _config.LobbySpawnPosition = player.transform.position;
+            SaveConfig();
+            
+            SendReply(player, $"<color=#00FF00>Lobby Spawn:</color> Set to {player.transform.position}");
+            LogDebug($"Admin {player.displayName} set lobby spawn to {player.transform.position}");
+        }
+        
+        [ChatCommand("kdspawn")]
+        private void CmdSetArenaSpawn(BasePlayer player, string command, string[] args)
+        {
+            if (player == null) return;
+            
+            if (!permission.UserHasPermission(player.UserIDString, PERMISSION_ADMIN))
+            {
+                SendReply(player, "<color=#FF0000>Error:</color> You don't have permission to use this command!");
+                return;
+            }
+            
+            if (args.Length < 2 || args[0].ToLower() != "set")
+            {
+                SendReply(player, "<color=#00FF00>Arena Spawn:</color> Usage: /kdspawn set <number>");
+                SendReply(player, "Example: /kdspawn set 1");
+                return;
+            }
+            
+            if (!int.TryParse(args[1], out int spawnIndex) || spawnIndex < 1)
+            {
+                SendReply(player, "<color=#FF0000>Error:</color> Spawn number must be a positive integer!");
+                return;
+            }
+            
+            // Ensure list exists
+            if (_config.ArenaSpawnPositions == null)
+            {
+                _config.ArenaSpawnPositions = new List<Vector3>();
+            }
+            
+            // Expand list if needed
+            while (_config.ArenaSpawnPositions.Count < spawnIndex)
+            {
+                _config.ArenaSpawnPositions.Add(new Vector3(0, 100, 500));
+            }
+            
+            // Set spawn point (spawnIndex - 1 because 0-indexed)
+            _config.ArenaSpawnPositions[spawnIndex - 1] = player.transform.position;
+            SaveConfig();
+            
+            SendReply(player, $"<color=#00FF00>Arena Spawn #{spawnIndex}:</color> Set to {player.transform.position}");
+            LogDebug($"Admin {player.displayName} set arena spawn #{spawnIndex} to {player.transform.position}");
+        }
+        
+        [ChatCommand("kdspawns")]
+        private void CmdListSpawns(BasePlayer player, string command, string[] args)
+        {
+            if (player == null) return;
+            
+            if (!permission.UserHasPermission(player.UserIDString, PERMISSION_ADMIN))
+            {
+                SendReply(player, "<color=#FF0000>Error:</color> You don't have permission to use this command!");
+                return;
+            }
+            
+            SendReply(player, "<color=#00FF00>=== Spawn Points ===</color>");
+            SendReply(player, $"<color=#FFFF00>Lobby:</color> {_config.LobbySpawnPosition}");
+            
+            if (_config.ArenaSpawnPositions != null && _config.ArenaSpawnPositions.Count > 0)
+            {
+                SendReply(player, $"<color=#FFFF00>Arena Spawns:</color> {_config.ArenaSpawnPositions.Count} configured");
+                for (int i = 0; i < _config.ArenaSpawnPositions.Count; i++)
+                {
+                    SendReply(player, $"  #{i + 1}: {_config.ArenaSpawnPositions[i]}");
+                }
+            }
+            else
+            {
+                SendReply(player, "<color=#FF8A00>Arena Spawns:</color> None configured (using default)");
+            }
         }
         
         [ChatCommand("dice")]
@@ -1042,7 +1800,11 @@ namespace Oxide.Plugins
             public bool IsInMatch { get; set; }
             public string EditingWeaponSlot { get; set; } // "primary" or "secondary"
             public string SelectedAttachmentCategory { get; set; } // "scopes", "silencers", "underbarrel"
+            public string SelectedStoreCategory { get; set; } // "guns", "skins", or "outfits"
+            public int GunsStorePage { get; set; } // Current page for gun store
+            public int SkinsStorePage { get; set; } // Current page for skins store
             public DateTime LastDiceGame { get; set; } // Cooldown for dice game
+            public string SelectedLoadoutTab { get; set; } // "weapons" or "outfit"
             
             internal PlayerSession(BasePlayer player, PlayerProfile profile)
             {
@@ -1051,6 +1813,10 @@ namespace Oxide.Plugins
                 LastAction = DateTime.UtcNow;
                 EditingWeaponSlot = "primary"; // Default to editing primary
                 SelectedAttachmentCategory = "scopes"; // Default to scopes tab
+                SelectedStoreCategory = "guns"; // Default to guns store
+                GunsStorePage = 0; // Start at first page
+                SkinsStorePage = 0; // Start at first page
+                SelectedLoadoutTab = "weapons"; // Default to weapons tab
             }
         }
         
@@ -1061,6 +1827,7 @@ namespace Oxide.Plugins
             public Dictionary<string, int> WeaponLevels { get; set; }
             public Dictionary<string, int> AttachmentLevels { get; set; }
             public List<string> OwnedSkins { get; set; }
+            public List<string> OwnedArmor { get; set; } // List of owned armor shortnames
             public int Tokens { get; set; }
             public bool IsVIP { get; set; }
             public DateTime LastUpdated { get; set; }
@@ -1074,6 +1841,7 @@ namespace Oxide.Plugins
                 WeaponLevels = new Dictionary<string, int>();
                 AttachmentLevels = new Dictionary<string, int>();
                 OwnedSkins = new List<string>();
+                OwnedArmor = new List<string>();
             }
             
             public PlayerProfile(ulong steamId, int startingTokens) : this()
@@ -1087,7 +1855,7 @@ namespace Oxide.Plugins
                 {
                     Name = "Default",
                     Primary = "ak47",
-                    Secondary = "pistol",
+                    Secondary = "python",
                     PrimaryAttachments = new Dictionary<string, string>(),
                     Skins = new Dictionary<string, string>()
                 });
@@ -1105,6 +1873,12 @@ namespace Oxide.Plugins
             public string Lethal { get; set; }
             public string Tactical { get; set; }
             public List<string> Perks { get; set; }
+            // Outfit/Armor slots
+            public string ArmorHead { get; set; }
+            public string ArmorChest { get; set; }
+            public string ArmorLegs { get; set; }
+            public string ArmorHands { get; set; }
+            public string ArmorFeet { get; set; }
             
             public Loadout()
             {
@@ -1217,1149 +1991,6 @@ namespace Oxide.Plugins
         #endregion
         
         
-        #region Module: LobbyUI
-        
-        internal class LobbyUI
-        {
-            private KillaDome _plugin;
-            private LoadoutEditor _loadoutEditor;
-            private ForgeStationSystem _forgeStation;
-            private StoreAPI _storeAPI;
-            
-            private const string UI_MAIN = "KillaDome.Main";
-            private const string UI_TAB_CONTAINER = "KillaDome.TabContainer";
-            
-            internal LobbyUI(KillaDome plugin, LoadoutEditor loadoutEditor, ForgeStationSystem forgeStation, StoreAPI storeAPI)
-            {
-                _plugin = plugin;
-                _loadoutEditor = loadoutEditor;
-                _forgeStation = forgeStation;
-                _storeAPI = storeAPI;
-            }
-            
-            public void ShowLobbyUI(BasePlayer player)
-            {
-                ShowLobbyUIWithTab(player, "play");
-            }
-            
-            public void ShowLobbyUIWithTab(BasePlayer player, string tab)
-            {
-                DestroyUI(player);
-                
-                var container = new CuiElementContainer();
-                
-                // Main background
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0 0 0 0.95" },
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
-                    CursorEnabled = true
-                }, "Overlay", UI_MAIN);
-                
-                // Title
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "KILLADOME", FontSize = 36, Align = TextAnchor.MiddleCenter, Color = "1 0.5 0 1" },
-                    RectTransform = { AnchorMin = "0.3 0.85", AnchorMax = "0.7 0.95" }
-                }, UI_MAIN);
-                
-                // Tab buttons
-                AddTabButton(container, UI_MAIN, "PLAY", 0, player, "killadome.tab play");
-                AddTabButton(container, UI_MAIN, "LOADOUTS", 1, player, "killadome.tab loadouts");
-                AddTabButton(container, UI_MAIN, "STORE", 2, player, "killadome.tab store");
-                AddTabButton(container, UI_MAIN, "STATS", 3, player, "killadome.tab stats");
-                AddTabButton(container, UI_MAIN, "SETTINGS", 4, player, "killadome.tab settings");
-                
-                // Close button
-                container.Add(new CuiButton
-                {
-                    Button = { Color = "0.8 0.2 0.2 1", Command = "killadome.close" },
-                    RectTransform = { AnchorMin = "0.92 0.92", AnchorMax = "0.98 0.98" },
-                    Text = { Text = "X", FontSize = 20, Align = TextAnchor.MiddleCenter }
-                }, UI_MAIN);
-                
-                // Tab content container
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.1 0.1 0.1 0.9" },
-                    RectTransform = { AnchorMin = "0.1 0.15", AnchorMax = "0.9 0.75" }
-                }, UI_MAIN, UI_TAB_CONTAINER);
-                
-                // Show appropriate tab content
-                switch (tab.ToLower())
-                {
-                    case "play":
-                        ShowPlayTab(container, player);
-                        break;
-                    case "loadouts":
-                        ShowLoadoutsTab(container, player);
-                        break;
-                    case "store":
-                        ShowStoreTab(container, player);
-                        break;
-                    case "stats":
-                        ShowStatsTab(container, player);
-                        break;
-                    case "settings":
-                        ShowSettingsTab(container, player);
-                        break;
-                    default:
-                        ShowPlayTab(container, player);
-                        break;
-                }
-                
-                CuiHelper.AddUi(player, container);
-            }
-            
-            private void AddTabButton(CuiElementContainer container, string parent, string text, int index, BasePlayer player, string command)
-            {
-                float width = 0.15f;
-                float spacing = 0.02f;
-                float startX = 0.1f;
-                float minX = startX + (width + spacing) * index;
-                float maxX = minX + width;
-                
-                container.Add(new CuiButton
-                {
-                    Button = { Color = "0.3 0.3 0.3 1", Command = command },
-                    RectTransform = { AnchorMin = $"{minX} 0.78", AnchorMax = $"{maxX} 0.83" },
-                    Text = { Text = text, FontSize = 14, Align = TextAnchor.MiddleCenter }
-                }, parent);
-            }
-            
-            private void ShowPlayTab(CuiElementContainer container, BasePlayer player)
-            {
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "READY TO PLAY?", FontSize = 24, Align = TextAnchor.MiddleCenter },
-                    RectTransform = { AnchorMin = "0.3 0.6", AnchorMax = "0.7 0.7" }
-                }, UI_TAB_CONTAINER);
-                
-                // Join Queue button
-                container.Add(new CuiButton
-                {
-                    Button = { Color = "0.2 0.8 0.2 1", Command = "killadome.joinqueue" },
-                    RectTransform = { AnchorMin = "0.35 0.4", AnchorMax = "0.65 0.5" },
-                    Text = { Text = "JOIN QUEUE", FontSize = 18, Align = TextAnchor.MiddleCenter }
-                }, UI_TAB_CONTAINER);
-                
-                // Stats preview
-                var session = _plugin.GetSession(player.userID);
-                if (session != null)
-                {
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = $"Blood Tokens: {session.Profile.Tokens}", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 0.8 0 1" },
-                        RectTransform = { AnchorMin = "0.3 0.3", AnchorMax = "0.7 0.35" }
-                    }, UI_TAB_CONTAINER);
-                }
-            }
-            
-            private void ShowLoadoutsTab(CuiElementContainer container, BasePlayer player)
-            {
-                var session = _plugin.GetSession(player.userID);
-                if (session == null)
-                {
-                    var profile = _plugin._saveManager.LoadPlayerProfile(player.userID);
-                    session = new PlayerSession(player, profile);
-                    _plugin._activeSessions[player.userID] = session;
-                }
-                
-                if (session.Profile.Loadouts.Count == 0)
-                {
-                    session.Profile.Loadouts.Add(new Loadout
-                    {
-                        Name = "Default",
-                        Primary = "ak47",
-                        Secondary = "pistol",
-                        PrimaryAttachments = new Dictionary<string, string>(),
-                        SecondaryAttachments = new Dictionary<string, string>(),
-                        Skins = new Dictionary<string, string>()
-                    });
-                }
-                
-                var loadout = session.Profile.Loadouts[0];
-                string editingSlot = session.EditingWeaponSlot ?? "primary";
-                string currentWeapon = editingSlot == "primary" ? loadout.Primary : loadout.Secondary;
-                
-                if (string.IsNullOrEmpty(currentWeapon))
-                {
-                    currentWeapon = editingSlot == "primary" ? "ak47" : "pistol";
-                }
-                
-                // === HEADER === (8% height)
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.08 0.08 0.12 0.95" },
-                    RectTransform = { AnchorMin = "0.05 0.90", AnchorMax = "0.95 0.98" }
-                }, UI_TAB_CONTAINER, "LoadoutHeader");
-                
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "1 0.6 0.2 0.6" },
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 0.05" }
-                }, "LoadoutHeader");
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "LOADOUT EDITOR", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = "1 0.9 0.7 1" },
-                    RectTransform = { AnchorMin = "0 0.05", AnchorMax = "1 1" }
-                }, "LoadoutHeader");
-                
-                // === WEAPON SELECTION === (20% height)
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.06 0.06 0.08 0.9" },
-                    RectTransform = { AnchorMin = "0.05 0.68", AnchorMax = "0.95 0.88" }
-                }, UI_TAB_CONTAINER, "WeaponSelection");
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "SELECT WEAPONS", FontSize = 11, Align = TextAnchor.UpperLeft, Color = "0.8 0.8 0.8 1" },
-                    RectTransform = { AnchorMin = "0.02 0.92", AnchorMax = "0.30 1" }
-                }, "WeaponSelection");
-                
-                // PRIMARY WEAPON
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.12 0.12 0.16 0.95" },
-                    RectTransform = { AnchorMin = "0.02 0.05", AnchorMax = "0.49 0.88" }
-                }, "WeaponSelection", "PrimaryBox");
-                
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "1 0.6 0.2 0.4" },
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "0.015 1" }
-                }, "PrimaryBox");
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "PRIMARY WEAPON", FontSize = 10, Align = TextAnchor.UpperCenter, Color = "1 0.8 0.5 1" },
-                    RectTransform = { AnchorMin = "0.05 0.88", AnchorMax = "0.95 0.98" }
-                }, "PrimaryBox");
-                
-                // Weapon image - using centralized config
-                string primaryImageUrl = _plugin._gunConfig.GetGunImageUrl(loadout.Primary);
-                container.Add(new CuiElement
-                {
-                    Parent = "PrimaryBox",
-                    Components =
-                    {
-                        new CuiRawImageComponent { Png = (string)_plugin.ImageLibrary?.Call("GetImage", primaryImageUrl) },
-                        new CuiRectTransformComponent { AnchorMin = "0.25 0.30", AnchorMax = "0.75 0.70" }
-                    }
-                });
-                
-                // Get display name from config
-                string primaryDisplayName = _plugin._gunConfig.Guns.ContainsKey(loadout.Primary) 
-                    ? _plugin._gunConfig.Guns[loadout.Primary].DisplayName 
-                    : loadout.Primary.ToUpper();
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = primaryDisplayName, FontSize = 20, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                    RectTransform = { AnchorMin = "0.05 0.12", AnchorMax = "0.95 0.28" }
-                }, "PrimaryBox");
-                
-                container.Add(new CuiButton
-                {
-                    Button = { Command = "killadome.weapon.prev primary", Color = "0.2 0.6 0.8 0.9" },
-                    Text = { Text = "< PREV", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                    RectTransform = { AnchorMin = "0.05 0.06", AnchorMax = "0.47 0.22" }
-                }, "PrimaryBox");
-                
-                container.Add(new CuiButton
-                {
-                    Button = { Command = "killadome.weapon.next primary", Color = "0.2 0.6 0.8 0.9" },
-                    Text = { Text = "NEXT >", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                    RectTransform = { AnchorMin = "0.53 0.06", AnchorMax = "0.95 0.22" }
-                }, "PrimaryBox");
-                
-                // SECONDARY WEAPON
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.12 0.12 0.16 0.95" },
-                    RectTransform = { AnchorMin = "0.51 0.05", AnchorMax = "0.98 0.88" }
-                }, "WeaponSelection", "SecondaryBox");
-                
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.5 0.7 1.0 0.4" },
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "0.015 1" }
-                }, "SecondaryBox");
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "SECONDARY WEAPON", FontSize = 10, Align = TextAnchor.UpperCenter, Color = "0.7 0.9 1.0 1" },
-                    RectTransform = { AnchorMin = "0.05 0.88", AnchorMax = "0.95 0.98" }
-                }, "SecondaryBox");
-                
-                // Weapon image - using centralized config
-                string secondaryImageUrl = _plugin._gunConfig.GetGunImageUrl(loadout.Secondary);
-                container.Add(new CuiElement
-                {
-                    Parent = "SecondaryBox",
-                    Components =
-                    {
-                        new CuiRawImageComponent { Png = (string)_plugin.ImageLibrary?.Call("GetImage", secondaryImageUrl) },
-                        new CuiRectTransformComponent { AnchorMin = "0.25 0.30", AnchorMax = "0.75 0.70" }
-                    }
-                });
-                
-                // Get display name from config
-                string secondaryDisplayName = _plugin._gunConfig.Guns.ContainsKey(loadout.Secondary) 
-                    ? _plugin._gunConfig.Guns[loadout.Secondary].DisplayName 
-                    : loadout.Secondary.ToUpper();
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = secondaryDisplayName, FontSize = 20, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                    RectTransform = { AnchorMin = "0.05 0.12", AnchorMax = "0.95 0.28" }
-                }, "SecondaryBox");
-                
-                container.Add(new CuiButton
-                {
-                    Button = { Command = "killadome.weapon.prev secondary", Color = "0.5 0.3 0.8 0.9" },
-                    Text = { Text = "< PREV", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                    RectTransform = { AnchorMin = "0.05 0.06", AnchorMax = "0.47 0.22" }
-                }, "SecondaryBox");
-                
-                container.Add(new CuiButton
-                {
-                    Button = { Command = "killadome.weapon.next secondary", Color = "0.5 0.3 0.8 0.9" },
-                    Text = { Text = "NEXT >", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                    RectTransform = { AnchorMin = "0.53 0.06", AnchorMax = "0.95 0.22" }
-                }, "SecondaryBox");
-                
-                // === EDITOR SECTION === (66% height)
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.06 0.06 0.08 0.9" },
-                    RectTransform = { AnchorMin = "0.05 0.08", AnchorMax = "0.95 0.66" }
-                }, UI_TAB_CONTAINER, "EditorArea");
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = $"CUSTOMIZE: {currentWeapon.ToUpper()}", FontSize = 12, Align = TextAnchor.UpperLeft, Color = "0.8 0.8 0.8 1" },
-                    RectTransform = { AnchorMin = "0.02 0.96", AnchorMax = "0.50 1" }
-                }, "EditorArea");
-                
-                bool isPrimaryActive = editingSlot == "primary";
-                
-                container.Add(new CuiButton
-                {
-                    Button = { Command = "killadome.editweapon primary", Color = isPrimaryActive ? "0.2 0.6 0.8 0.9" : "0.15 0.15 0.18 0.9" },
-                    Text = { Text = "PRIMARY", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = isPrimaryActive ? "1 1 1 1" : "0.6 0.6 0.6 1" },
-                    RectTransform = { AnchorMin = "0.72 0.96", AnchorMax = "0.84 1" }
-                }, "EditorArea");
-                
-                container.Add(new CuiButton
-                {
-                    Button = { Command = "killadome.editweapon secondary", Color = !isPrimaryActive ? "0.5 0.3 0.8 0.9" : "0.15 0.15 0.18 0.9" },
-                    Text = { Text = "SECONDARY", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = !isPrimaryActive ? "1 1 1 1" : "0.6 0.6 0.6 1" },
-                    RectTransform = { AnchorMin = "0.85 0.96", AnchorMax = "0.98 1" }
-                }, "EditorArea");
-                
-                // LEFT PANEL - SKINS (with scrolling)
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.10 0.10 0.14 0.95" },
-                    RectTransform = { AnchorMin = "0.02 0.02", AnchorMax = "0.49 0.93" }
-                }, "EditorArea", "SkinsPanel");
-                
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.15 0.10 0.20 0.9" },
-                    RectTransform = { AnchorMin = "0 0.96", AnchorMax = "1 1" }
-                }, "SkinsPanel");
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "WEAPON SKINS", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = "0.9 0.8 1.0 1" },
-                    RectTransform = { AnchorMin = "0 0.96", AnchorMax = "1 1" }
-                }, "SkinsPanel");
-                
-                // Scrollable content area for skins
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0 0 0 0" },
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 0.94" }
-                }, "SkinsPanel", "SkinsScroll");
-                
-                // Skins list - Now using centralized configuration!
-                var availableSkins = _plugin._gunConfig.GetSkinsForWeapon(currentWeapon);
-                
-                for (int i = 0; i < availableSkins.Length; i++)
-                {
-                    var skin = availableSkins[i];
-                    float yMin = 0.96f - ((i + 1) * 0.20f);
-                    float yMax = yMin + 0.18f;
-                    
-                    bool isOwned = session.Profile.OwnedSkins.Contains(skin.SkinId);
-                    bool isEquipped = loadout.Skins.TryGetValue(skin.WeaponId, out string equippedSkin) && equippedSkin == skin.SkinId;
-                    
-                    container.Add(new CuiPanel
-                    {
-                        Image = { Color = isOwned ? "0.14 0.14 0.18 1" : "0.10 0.10 0.14 0.5" },
-                        RectTransform = { AnchorMin = $"0.03 {yMin}", AnchorMax = $"0.97 {yMax}" }
-                    }, "SkinsScroll", $"SkinCard_{i}");
-                    
-                    if (isEquipped)
-                    {
-                        container.Add(new CuiPanel
-                        {
-                            Image = { Color = "0.6 0.4 1.0 0.6" },
-                            RectTransform = { AnchorMin = "0 0", AnchorMax = "0.015 1" }
-                        }, $"SkinCard_{i}");
-                    }
-                    
-                    // Skin image - using ImageUrl from centralized config
-                    container.Add(new CuiElement
-                    {
-                        Parent = $"SkinCard_{i}",
-                        Components =
-                        {
-                            new CuiRawImageComponent { Png = (string)_plugin.ImageLibrary?.Call("GetImage", skin.ImageUrl) },
-                            new CuiRectTransformComponent { AnchorMin = "0.05 0.05", AnchorMax = "0.35 0.45" }
-                        }
-                    });
-                    
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = skin.Name, FontSize = 10, Align = TextAnchor.MiddleLeft, Color = "1 1 1 1" },
-                        RectTransform = { AnchorMin = "0.40 0.70", AnchorMax = "0.95 0.90" }
-                    }, $"SkinCard_{i}");
-                    
-                    string statusText = isEquipped ? "EQUIPPED" : (isOwned ? "OWNED" : "LOCKED");
-                    string statusColor = isEquipped ? "0.4 1.0 0.4" : (isOwned ? "0.6 0.8 1.0" : "1.0 0.4 0.4");
-                    
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = statusText, FontSize = 8, Align = TextAnchor.MiddleLeft, Color = $"{statusColor} 1" },
-                        RectTransform = { AnchorMin = "0.40 0.50", AnchorMax = "0.70 0.68" }
-                    }, $"SkinCard_{i}");
-                    
-                    if (isEquipped)
-                    {
-                        container.Add(new CuiButton
-                        {
-                            Button = { Command = "", Color = "0.2 0.6 0.2 0.5" },
-                            Text = { Text = "EQUIPPED", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "0.8 1 0.8 1" },
-                            RectTransform = { AnchorMin = "0.40 0.10", AnchorMax = "0.95 0.40" }
-                        }, $"SkinCard_{i}");
-                    }
-                    else if (isOwned)
-                    {
-                        container.Add(new CuiButton
-                        {
-                            Button = { Command = $"killadome.applyskin {editingSlot} {skin.SkinId}", Color = "0.2 0.6 0.8 0.9" },
-                            Text = { Text = "EQUIP", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                            RectTransform = { AnchorMin = "0.40 0.10", AnchorMax = "0.95 0.40" }
-                        }, $"SkinCard_{i}");
-                    }
-                    else
-                    {
-                        container.Add(new CuiButton
-                        {
-                            Button = { Command = "", Color = "0.15 0.15 0.15 0.5" },
-                            Text = { Text = "LOCKED", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "0.5 0.5 0.5 1" },
-                            RectTransform = { AnchorMin = "0.40 0.10", AnchorMax = "0.95 0.40" }
-                        }, $"SkinCard_{i}");
-                    }
-                }
-                
-                // RIGHT PANEL - ATTACHMENTS (with scrolling)
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.10 0.10 0.14 0.95" },
-                    RectTransform = { AnchorMin = "0.51 0.02", AnchorMax = "0.98 0.93" }
-                }, "EditorArea", "AttachmentsPanel");
-                
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.10 0.15 0.20 0.9" },
-                    RectTransform = { AnchorMin = "0 0.96", AnchorMax = "1 1" }
-                }, "AttachmentsPanel");
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "WEAPON ATTACHMENTS", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = "0.7 1.0 1.0 1" },
-                    RectTransform = { AnchorMin = "0 0.96", AnchorMax = "1 1" }
-                }, "AttachmentsPanel");
-                
-                // Category tabs
-                string selectedCategory = session.SelectedAttachmentCategory ?? "scopes";
-                string[] categories = { "SCOPES", "BARREL", "UNDERBARREL" };
-                
-                for (int i = 0; i < categories.Length; i++)
-                {
-                    float xMin = 0.03f + (i * 0.323f);
-                    float xMax = xMin + 0.31f;
-                    
-                    bool isSelected = categories[i].ToLower() == selectedCategory || 
-                                     (categories[i] == "BARREL" && selectedCategory == "silencers");
-                    
-                    string categoryCommand = categories[i] == "BARREL" ? "silencers" : categories[i].ToLower();
-                    
-                    container.Add(new CuiButton
-                    {
-                        Button = { Command = $"killadome.attachcat {categoryCommand}", Color = isSelected ? "0.2 0.6 0.8 0.9" : "0.12 0.12 0.15 0.9" },
-                        Text = { Text = categories[i], FontSize = 9, Align = TextAnchor.MiddleCenter, Color = isSelected ? "1 1 1 1" : "0.6 0.6 0.6 1" },
-                        RectTransform = { AnchorMin = $"{xMin} 0.91", AnchorMax = $"{xMax} 0.95" }
-                    }, "AttachmentsPanel");
-                }
-                
-                // Scrollable content area for attachments
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0 0 0 0" },
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 0.89" }
-                }, "AttachmentsPanel", "AttachmentsScroll");
-                
-                // Attachments list
-                var allAttachments = new[]
-                {
-                    new { Name = "Small Scope", Id = "weapon.mod.small.scope", ImageId = "small_scope", Category = "scopes" },
-                    new { Name = "8x Scope", Id = "weapon.mod.8x.scope", ImageId = "8x_scope", Category = "scopes" },
-                    new { Name = "Holo Sight", Id = "weapon.mod.holosight", ImageId = "holo_sight", Category = "underbarrel" },
-                    new { Name = "Laser Sight", Id = "weapon.mod.lasersight", ImageId = "laser_sight", Category = "underbarrel" },
-                    new { Name = "Soda Can Silencer", Id = "weapon.mod.sodacansilencer", ImageId = "sodacan_silencer", Category = "silencers" },
-                    new { Name = "Silencer", Id = "weapon.mod.silencer", ImageId = "silencer", Category = "silencers" },
-                    new { Name = "Muzzle Brake", Id = "weapon.mod.muzzlebrake", ImageId = "muzzle_brake", Category = "silencers" },
-                    new { Name = "Muzzle Boost", Id = "weapon.mod.muzzleboost", ImageId = "muzzle_boost", Category = "silencers" },
-                };
-                
-                // Only show owned attachments
-                var availableAttachments = allAttachments
-                    .Where(a => a.Category == selectedCategory && session.Profile.OwnedSkins.Contains(a.Id))
-                    .ToArray();
-                
-                // Show helpful message if no attachments owned in this category
-                if (availableAttachments.Length == 0)
-                {
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = "No attachments owned in this category.\nPurchase attachments in the Store Tab.", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = "0.6 0.6 0.6 1" },
-                        RectTransform = { AnchorMin = "0.1 0.35", AnchorMax = "0.9 0.65" }
-                    }, "AttachmentsScroll");
-                }
-                
-                for (int i = 0; i < availableAttachments.Length; i++)
-                {
-                    var att = availableAttachments[i];
-                    float yMin = 0.96f - ((i + 1) * 0.20f);
-                    float yMax = yMin + 0.18f;
-                    
-                    var attachments = editingSlot == "primary" ? loadout.PrimaryAttachments : loadout.SecondaryAttachments;
-                    bool isEquipped = attachments.ContainsValue(att.Id);
-                    
-                    container.Add(new CuiPanel
-                    {
-                        Image = { Color = "0.14 0.14 0.18 1" },
-                        RectTransform = { AnchorMin = $"0.03 {yMin}", AnchorMax = $"0.97 {yMax}" }
-                    }, "AttachmentsScroll", $"AttCard_{i}");
-                    
-                    if (isEquipped)
-                    {
-                        container.Add(new CuiPanel
-                        {
-                            Image = { Color = "0.4 0.8 1.0 0.6" },
-                            RectTransform = { AnchorMin = "0 0", AnchorMax = "0.015 1" }
-                        }, $"AttCard_{i}");
-                    }
-                    
-                    // Attachment image
-                    container.Add(new CuiElement
-                    {
-                        Parent = $"AttCard_{i}",
-                        Components =
-                        {
-                            new CuiRawImageComponent { Png = (string)_plugin.ImageLibrary?.Call("GetImage", att.ImageId) },
-                            new CuiRectTransformComponent { AnchorMin = "0.05 0.05", AnchorMax = "0.35 0.45" }
-                        }
-                    });
-                    
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = att.Name, FontSize = 10, Align = TextAnchor.MiddleLeft, Color = "1 1 1 1" },
-                        RectTransform = { AnchorMin = "0.40 0.70", AnchorMax = "0.95 0.90" }
-                    }, $"AttCard_{i}");
-                    
-                    string statusText = isEquipped ? "EQUIPPED" : "OWNED";
-                    string statusColor = isEquipped ? "0.4 1.0 0.4" : "0.6 0.8 1.0";
-                    
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = statusText, FontSize = 8, Align = TextAnchor.MiddleLeft, Color = $"{statusColor} 1" },
-                        RectTransform = { AnchorMin = "0.40 0.50", AnchorMax = "0.70 0.68" }
-                    }, $"AttCard_{i}");
-                    
-                    if (isEquipped)
-                    {
-                        container.Add(new CuiButton
-                        {
-                            Button = { Command = "", Color = "0.2 0.6 0.2 0.5" },
-                            Text = { Text = "EQUIPPED", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "0.8 1 0.8 1" },
-                            RectTransform = { AnchorMin = "0.40 0.10", AnchorMax = "0.95 0.40" }
-                        }, $"AttCard_{i}");
-                    }
-                    else
-                    {
-                        container.Add(new CuiButton
-                        {
-                            Button = { Command = $"killadome.applyattachment {editingSlot} {att.Category} {att.Id}", Color = "0.2 0.6 0.8 0.9" },
-                            Text = { Text = "EQUIP", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                            RectTransform = { AnchorMin = "0.40 0.10", AnchorMax = "0.95 0.40" }
-                        }, $"AttCard_{i}");
-                    }
-                }
-                
-                // === FOOTER === (6% height)
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.08 0.08 0.12 0.9" },
-                    RectTransform = { AnchorMin = "0.05 0.01", AnchorMax = "0.95 0.06" }
-                }, UI_TAB_CONTAINER, "LoadoutFooter");
-                
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "1 0.6 0.2 0.6" },
-                    RectTransform = { AnchorMin = "0 0.90", AnchorMax = "1 1" }
-                }, "LoadoutFooter");
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "Select weapons | Customize with skins and attachments | Purchase items in Store Tab", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = "0.8 0.8 0.8 1" },
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 0.90" }
-                }, "LoadoutFooter");
-                
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "1 0.6 0.2 0.4" },
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 0.05" }
-                }, "LoadoutFooter");
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "VIC", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "0.8 0.9 1.0 0.9" },
-                    RectTransform = { AnchorMin = "0.05 0.15", AnchorMax = "0.95 0.85" }
-                }, "LoadoutFooter");
-            }
-            
-            private void ShowStoreTab(CuiElementContainer container, BasePlayer player)
-            {
-                var session = _plugin.GetSession(player.userID);
-                if (session == null)
-                {
-                    // Create session if it doesn't exist
-                    var profile = _plugin._saveManager.LoadPlayerProfile(player.userID);
-                    session = new PlayerSession(player, profile);
-                    _plugin._activeSessions[player.userID] = session;
-                }
-                
-                // ===== HEADER SECTION WITH GRADIENT =====
-                // Gradient background for header
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.08 0.08 0.12 0.95" },
-                    RectTransform = { AnchorMin = "0.05 0.80", AnchorMax = "0.95 0.92" }
-                }, UI_TAB_CONTAINER, "StoreHeader");
-                
-                // Top accent line (cyan glow)
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.2 0.8 1.0 0.6" },
-                    RectTransform = { AnchorMin = "0 0.98", AnchorMax = "1 1" }
-                }, "StoreHeader");
-                
-                // Title with shadow effect
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "━━━  S T O R E  ━━━", FontSize = 28, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                    RectTransform = { AnchorMin = "0.2 0.5", AnchorMax = "0.8 0.9" }
-                }, "StoreHeader");
-                
-                // Token balance with icon and glow effect
-                string tokenPanelName = "TokenPanel";
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.12 0.08 0.02 0.9" },
-                    RectTransform = { AnchorMin = "0.75 0.15", AnchorMax = "0.95 0.75" }
-                }, "StoreHeader", tokenPanelName);
-                
-                // Glow border for token panel
-                container.Add(new CuiElement
-                {
-                    Parent = tokenPanelName,
-                    Components =
-                    {
-                        new CuiImageComponent { Color = "1 0.6 0 0.4" },
-                        new CuiOutlineComponent { Color = "1 0.6 0 0.8", Distance = "2 -2" },
-                        new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1" }
-                    }
-                });
-                
-                // Token icon (using unicode symbol)
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "◆", FontSize = 22, Align = TextAnchor.MiddleRight, Color = "1 0.8 0 1" },
-                    RectTransform = { AnchorMin = "0.05 0", AnchorMax = "0.35 1" }
-                }, tokenPanelName);
-                
-                // Token amount
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = $"{session.Profile.Tokens}", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = "1 0.9 0.7 1" },
-                    RectTransform = { AnchorMin = "0.35 0", AnchorMax = "0.95 1" }
-                }, tokenPanelName);
-                
-                // ===== GUN SKINS SECTION =====
-                var gunSkins = new[]
-                {
-                    new { Name = "AK-47 Neon Skin", Cost = 500, Id = "3102802323", ImageId = "ak47_neon", Tag = "POPULAR", Rarity = "Epic" },
-                    new { Name = "AK-47 Classic Skin", Cost = 400, Id = "skin_ak47_neon", ImageId = "ak47_classic", Tag = "NEW", Rarity = "Rare" }
-                };
-                
-                // Section background with gradient
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.06 0.06 0.08 0.85" },
-                    RectTransform = { AnchorMin = "0.05 0.38", AnchorMax = "0.48 0.78" }
-                }, UI_TAB_CONTAINER, "GunSkinsSection");
-                
-                // Section header bar
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.15 0.1 0.2 0.9" },
-                    RectTransform = { AnchorMin = "0 0.94", AnchorMax = "1 1" }
-                }, "GunSkinsSection");
-                
-                // Section Title with icon
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "⚔  W E A P O N   S K I N S", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = "0.9 0.8 1.0 1" },
-                    RectTransform = { AnchorMin = "0.05 0.94", AnchorMax = "0.95 1" }
-                }, "GunSkinsSection");
-                
-                // Decorative corner accents
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.6 0.4 1.0 0.3" },
-                    RectTransform = { AnchorMin = "0 0.94", AnchorMax = "0.02 1" }
-                }, "GunSkinsSection");
-                
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.6 0.4 1.0 0.3" },
-                    RectTransform = { AnchorMin = "0.98 0.94", AnchorMax = "1 1" }
-                }, "GunSkinsSection");
-                
-                // Gun Skins Items - Modern card design
-                for (int i = 0; i < gunSkins.Length; i++)
-                {
-                    var item = gunSkins[i];
-                    float yMin = 0.88f - (i * 0.42f);
-                    float yMax = yMin + 0.38f;
-                    
-                    string cardName = $"GunSkinCard_{i}";
-                    
-                    // Card background with gradient
-                    container.Add(new CuiPanel
-                    {
-                        Image = { Color = "0.12 0.12 0.16 0.95" },
-                        RectTransform = { AnchorMin = $"0.04 {yMin}", AnchorMax = $"0.96 {yMax}" }
-                    }, "GunSkinsSection", cardName);
-                    
-                    // Glow effect border
-                    container.Add(new CuiElement
-                    {
-                        Parent = cardName,
-                        Components =
-                        {
-                            new CuiImageComponent { Color = "0.3 0.3 0.3 0.0" },
-                            new CuiOutlineComponent { Color = "0.5 0.4 0.7 0.6", Distance = "2 -2" },
-                            new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1" }
-                        }
-                    });
-                    
-                    // Preview box with border
-                    string previewName = $"StorePreviewGun_{i}";
-                    container.Add(new CuiPanel
-                    {
-                        Image = { Color = "0.08 0.08 0.12 1" },
-                        RectTransform = { AnchorMin = "0.05 0.25", AnchorMax = "0.45 0.95" }
-                    }, cardName, previewName);
-                    
-                    // Preview border glow
-                    container.Add(new CuiElement
-                    {
-                        Parent = previewName,
-                        Components =
-                        {
-                            new CuiImageComponent { Color = "0.2 0.2 0.2 0.0" },
-                            new CuiOutlineComponent { Color = "0.4 0.3 0.6 0.8", Distance = "1 -1" },
-                            new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1" }
-                        }
-                    });
-                    
-                    // Try to add image from ImageLibrary
-                    if (_plugin.ImageLibrary != null && _plugin.ImageLibrary.IsLoaded)
-                    {
-                        string imageId = (string)_plugin.ImageLibrary.Call("GetImage", item.ImageId);
-                        if (!string.IsNullOrEmpty(imageId))
-                        {
-                            container.Add(new CuiElement
-                            {
-                                Parent = previewName,
-                                Components =
-                                {
-                                    new CuiRawImageComponent { Png = imageId },
-                                    new CuiRectTransformComponent { AnchorMin = "0.1 0.1", AnchorMax = "0.9 0.9" }
-                                }
-                            });
-                        }
-                    }
-                    
-                    // Tag badge (NEW, POPULAR, etc)
-                    string tagColor = item.Tag == "POPULAR" ? "1 0.3 0.3" : "0.3 1 0.5";
-                    container.Add(new CuiPanel
-                    {
-                        Image = { Color = $"{tagColor} 0.9" },
-                        RectTransform = { AnchorMin = "0.05 0.85", AnchorMax = "0.30 0.95" }
-                    }, cardName);
-                    
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = item.Tag, FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "0.1 0.1 0.1 1" },
-                        RectTransform = { AnchorMin = "0.05 0.85", AnchorMax = "0.30 0.95" }
-                    }, cardName);
-                    
-                    // Item name with larger font
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = item.Name, FontSize = 15, Align = TextAnchor.UpperLeft, Color = "1 1 1 1" },
-                        RectTransform = { AnchorMin = "0.50 0.70", AnchorMax = "0.95 0.90" }
-                    }, cardName);
-                    
-                    // Rarity indicator
-                    string rarityColor = item.Rarity == "Epic" ? "0.6 0.3 1.0" : "0.3 0.7 1.0";
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = $"★ {item.Rarity}", FontSize = 11, Align = TextAnchor.UpperLeft, Color = $"{rarityColor} 1" },
-                        RectTransform = { AnchorMin = "0.50 0.55", AnchorMax = "0.95 0.70" }
-                    }, cardName);
-                    
-                    // Price with icon
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = "◆", FontSize = 16, Align = TextAnchor.MiddleRight, Color = "1 0.8 0 1" },
-                        RectTransform = { AnchorMin = "0.50 0.35", AnchorMax = "0.60 0.50" }
-                    }, cardName);
-                    
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = $"{item.Cost}", FontSize = 14, Align = TextAnchor.MiddleLeft, Color = "1 0.9 0.7 1" },
-                        RectTransform = { AnchorMin = "0.60 0.35", AnchorMax = "0.80 0.50" }
-                    }, cardName);
-                    
-                    // Modern BUY button with gradient
-                    bool canAfford = session.Profile.Tokens >= item.Cost;
-                    string buttonBgColor = canAfford ? "0.2 0.7 0.3" : "0.3 0.3 0.3";
-                    string buttonTextColor = canAfford ? "1 1 1" : "0.5 0.5 0.5";
-                    
-                    container.Add(new CuiButton
-                    {
-                        Button = { Color = $"{buttonBgColor} 0.9", Command = canAfford ? $"killadome.purchase {item.Id} {item.Cost}" : "" },
-                        Text = { Text = canAfford ? "PURCHASE" : "LOCKED", FontSize = 13, Align = TextAnchor.MiddleCenter, Color = $"{buttonTextColor} 1" },
-                        RectTransform = { AnchorMin = "0.50 0.10", AnchorMax = "0.95 0.30" }
-                    }, cardName);
-                }
-                
-                // ===== ATTACHMENTS SECTION =====
-                var attachments = new[]
-                {
-                    // Scopes
-                    new { Name = "Small Scope", Cost = 250, Id = "weapon.mod.small.scope", ImageId = "small_scope", Category = "Optics" },
-                    new { Name = "8x Scope", Cost = 400, Id = "weapon.mod.8x.scope", ImageId = "8x_scope", Category = "Optics" },
-                    new { Name = "Holo Sight", Cost = 300, Id = "weapon.mod.holosight", ImageId = "holo_sight", Category = "Optics" },
-                    
-                    // Underbarrel
-                    new { Name = "Laser Sight", Cost = 250, Id = "weapon.mod.lasersight", ImageId = "laser_sight", Category = "Tactical" },
-                    
-                    // Silencers/Muzzle
-                    new { Name = "Soda Can Silencer", Cost = 150, Id = "weapon.mod.sodacansilencer", ImageId = "sodacan_silencer", Category = "Barrel" },
-                    new { Name = "Oil Filter Silencer", Cost = 200, Id = "weapon.mod.oilfiltersilencer", ImageId = "oilfilter_silencer", Category = "Barrel" },
-                    new { Name = "Silencer", Cost = 400, Id = "weapon.mod.silencer", ImageId = "silencer", Category = "Barrel" },
-                    new { Name = "Muzzle Brake", Cost = 300, Id = "weapon.mod.muzzlebrake", ImageId = "muzzle_brake", Category = "Barrel" },
-                    new { Name = "Muzzle Boost", Cost = 350, Id = "weapon.mod.muzzleboost", ImageId = "muzzle_boost", Category = "Barrel" }
-                };
-                
-                // Section background
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.06 0.06 0.08 0.85" },
-                    RectTransform = { AnchorMin = "0.52 0.08", AnchorMax = "0.95 0.78" }
-                }, UI_TAB_CONTAINER, "AttachmentsSection");
-                
-                // Section header bar with cyan accent
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.1 0.15 0.2 0.9" },
-                    RectTransform = { AnchorMin = "0 0.96", AnchorMax = "1 1" }
-                }, "AttachmentsSection");
-                
-                // Section Title
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "⚙  A T T A C H M E N T S", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = "0.7 1.0 1.0 1" },
-                    RectTransform = { AnchorMin = "0.05 0.96", AnchorMax = "0.95 1" }
-                }, "AttachmentsSection");
-                
-                // Decorative accents
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.4 0.8 1.0 0.3" },
-                    RectTransform = { AnchorMin = "0 0.96", AnchorMax = "0.02 1" }
-                }, "AttachmentsSection");
-                
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.4 0.8 1.0 0.3" },
-                    RectTransform = { AnchorMin = "0.98 0.96", AnchorMax = "1 1" }
-                }, "AttachmentsSection");
-                
-                // Grid layout for attachments (3 columns)
-                int itemsPerRow = 3;
-                float cardWidth = 0.30f;
-                float cardHeight = 0.28f;
-                float spacingX = 0.03f;
-                float spacingY = 0.03f;
-                float startX = 0.03f;
-                float startY = 0.92f;
-                
-                for (int i = 0; i < attachments.Length; i++)
-                {
-                    var item = attachments[i];
-                    int row = i / itemsPerRow;
-                    int col = i % itemsPerRow;
-                    
-                    float xMin = startX + (col * (cardWidth + spacingX));
-                    float xMax = xMin + cardWidth;
-                    float yMax = startY - (row * (cardHeight + spacingY));
-                    float yMin = yMax - cardHeight;
-                    
-                    string cardName = $"AttCard_{i}";
-                    
-                    // Card background
-                    container.Add(new CuiPanel
-                    {
-                        Image = { Color = "0.10 0.12 0.15 0.95" },
-                        RectTransform = { AnchorMin = $"{xMin} {yMin}", AnchorMax = $"{xMax} {yMax}" }
-                    }, "AttachmentsSection", cardName);
-                    
-                    // Card border glow
-                    container.Add(new CuiElement
-                    {
-                        Parent = cardName,
-                        Components =
-                        {
-                            new CuiImageComponent { Color = "0.2 0.2 0.2 0.0" },
-                            new CuiOutlineComponent { Color = "0.3 0.6 0.8 0.5", Distance = "1 -1" },
-                            new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1" }
-                        }
-                    });
-                    
-                    // Preview box
-                    string previewName = $"StorePreviewAtt_{i}";
-                    container.Add(new CuiPanel
-                    {
-                        Image = { Color = "0.08 0.08 0.10 1" },
-                        RectTransform = { AnchorMin = "0.15 0.45", AnchorMax = "0.85 0.90" }
-                    }, cardName, previewName);
-                    
-                    // Preview border
-                    container.Add(new CuiElement
-                    {
-                        Parent = previewName,
-                        Components =
-                        {
-                            new CuiImageComponent { Color = "0.2 0.2 0.2 0.0" },
-                            new CuiOutlineComponent { Color = "0.4 0.6 0.8 0.6", Distance = "1 -1" },
-                            new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1" }
-                        }
-                    });
-                    
-                    // Try to add image
-                    if (_plugin.ImageLibrary != null && _plugin.ImageLibrary.IsLoaded)
-                    {
-                        string imageId = (string)_plugin.ImageLibrary.Call("GetImage", item.ImageId);
-                        if (!string.IsNullOrEmpty(imageId))
-                        {
-                            container.Add(new CuiElement
-                            {
-                                Parent = previewName,
-                                Components =
-                                {
-                                    new CuiRawImageComponent { Png = imageId },
-                                    new CuiRectTransformComponent { AnchorMin = "0.1 0.1", AnchorMax = "0.9 0.9" }
-                                }
-                            });
-                        }
-                    }
-                    
-                    // Category tag
-                    string categoryColor = item.Category == "Optics" ? "0.5 0.7 1.0" : 
-                                          item.Category == "Tactical" ? "1.0 0.5 0.5" : "0.5 1.0 0.7";
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = item.Category.ToUpper(), FontSize = 7, Align = TextAnchor.MiddleCenter, Color = $"{categoryColor} 0.8" },
-                        RectTransform = { AnchorMin = "0.05 0.85", AnchorMax = "0.45 0.95" }
-                    }, cardName);
-                    
-                    // Item name
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = item.Name, FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-                        RectTransform = { AnchorMin = "0.05 0.30", AnchorMax = "0.95 0.43" }
-                    }, cardName);
-                    
-                    // Price
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = "◆", FontSize = 11, Align = TextAnchor.MiddleRight, Color = "1 0.8 0 1" },
-                        RectTransform = { AnchorMin = "0.25 0.15", AnchorMax = "0.45 0.28" }
-                    }, cardName);
-                    
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = $"{item.Cost}", FontSize = 10, Align = TextAnchor.MiddleLeft, Color = "1 0.9 0.7 1" },
-                        RectTransform = { AnchorMin = "0.45 0.15", AnchorMax = "0.75 0.28" }
-                    }, cardName);
-                    
-                    // Buy button
-                    bool canAfford = session.Profile.Tokens >= item.Cost;
-                    string btnColor = canAfford ? "0.2 0.6 0.8" : "0.25 0.25 0.25";
-                    string btnText = canAfford ? "BUY" : "🔒";
-                    
-                    container.Add(new CuiButton
-                    {
-                        Button = { Color = $"{btnColor} 0.9", Command = canAfford ? $"killadome.purchase {item.Id} {item.Cost}" : "" },
-                        Text = { Text = btnText, FontSize = 10, Align = TextAnchor.MiddleCenter, Color = canAfford ? "1 1 1 1" : "0.5 0.5 0.5 1" },
-                        RectTransform = { AnchorMin = "0.15 0.02", AnchorMax = "0.85 0.12" }
-                    }, cardName);
-                }
-                
-                // ===== FOOTER INFO BAR =====
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.08 0.08 0.12 0.9" },
-                    RectTransform = { AnchorMin = "0.05 0.02", AnchorMax = "0.95 0.06" }
-                }, UI_TAB_CONTAINER, "StoreFooter");
-                
-                // Bottom accent line
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.2 0.8 1.0 0.4" },
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 0.05" }
-                }, "StoreFooter");
-                
-                // Info text with icon
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "💎 Purchase items with Blood Tokens to enhance your loadout  |  Earn tokens by eliminating enemies", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = "0.8 0.9 1.0 0.9" },
-                    RectTransform = { AnchorMin = "0.05 0.2", AnchorMax = "0.95 0.95" }
-                }, "StoreFooter");
-            }
-            
-            private void ShowStatsTab(CuiElementContainer container, BasePlayer player)
-            {
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "YOUR STATS", FontSize = 24, Align = TextAnchor.MiddleCenter, Color = "1 0.8 0 1" },
-                    RectTransform = { AnchorMin = "0.3 0.8", AnchorMax = "0.7 0.9" }
-                }, UI_TAB_CONTAINER);
-                
-                var session = _plugin.GetSession(player.userID);
-                if (session != null)
-                {
-                    var profile = session.Profile;
-                    
-                    string[] stats = 
-                    {
-                        $"Kills: {profile.TotalKills}",
-                        $"Deaths: {profile.TotalDeaths}",
-                        $"K/D Ratio: {(profile.TotalDeaths > 0 ? ((float)profile.TotalKills / profile.TotalDeaths).ToString("F2") : profile.TotalKills.ToString())}",
-                        $"Blood Tokens: {profile.Tokens}",
-                        $"Matches Played: {profile.MatchesPlayed}",
-                        $"VIP Status: {(profile.IsVIP ? "YES" : "NO")}"
-                    };
-                    
-                    for (int i = 0; i < stats.Length; i++)
-                    {
-                        float yPos = 0.65f - (i * 0.08f);
-                        container.Add(new CuiLabel
-                        {
-                            Text = { Text = stats[i], FontSize = 16, Align = TextAnchor.MiddleLeft },
-                            RectTransform = { AnchorMin = $"0.25 {yPos}", AnchorMax = $"0.75 {yPos + 0.06f}" }
-                        }, UI_TAB_CONTAINER);
-                    }
-                }
-                else
-                {
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = "No stats available", FontSize = 16, Align = TextAnchor.MiddleCenter },
-                        RectTransform = { AnchorMin = "0.3 0.5", AnchorMax = "0.7 0.6" }
-                    }, UI_TAB_CONTAINER);
-                }
-            }
-            
-            private void ShowSettingsTab(CuiElementContainer container, BasePlayer player)
-            {
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "SETTINGS", FontSize = 24, Align = TextAnchor.MiddleCenter, Color = "1 0.8 0 1" },
-                    RectTransform = { AnchorMin = "0.3 0.8", AnchorMax = "0.7 0.9" }
-                }, UI_TAB_CONTAINER);
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "Plugin Settings", FontSize = 18, Align = TextAnchor.MiddleLeft },
-                    RectTransform = { AnchorMin = "0.2 0.6", AnchorMax = "0.8 0.65" }
-                }, UI_TAB_CONTAINER);
-                
-                string[] settings = 
-                {
-                    "UI Update Throttle: 100ms",
-                    "Auto-Save Interval: 5 minutes",
-                    "Max Weapon Level: 10",
-                    "Max Attachment Level: 5"
-                };
-                
-                for (int i = 0; i < settings.Length; i++)
-                {
-                    float yPos = 0.5f - (i * 0.08f);
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = settings[i], FontSize = 14, Align = TextAnchor.MiddleLeft },
-                        RectTransform = { AnchorMin = $"0.25 {yPos}", AnchorMax = $"0.75 {yPos + 0.06f}" }
-                    }, UI_TAB_CONTAINER);
-                }
-                
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = "Configure via KillaDome.json", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "0.7 0.7 0.7 1" },
-                    RectTransform = { AnchorMin = "0.3 0.15", AnchorMax = "0.7 0.2" }
-                }, UI_TAB_CONTAINER);
-            }
-            
-            public void DestroyUI(BasePlayer player)
-            {
-                CuiHelper.DestroyUi(player, UI_MAIN);
-            }
-        }
-        
-        #endregion
         
         #region Module: LoadoutEditor
         
