@@ -80,91 +80,155 @@ namespace Oxide.Plugins
         }
         
         /// <summary>
+        /// Test method - shows a simple UI to verify plugin communication works
+        /// </summary>
+        public void ShowTestUI(BasePlayer player)
+        {
+            try
+            {
+                if (player == null)
+                {
+                    PrintWarning("ShowTestUI: player is null");
+                    return;
+                }
+                
+                Puts($"[KillaUI] ShowTestUI called for {player.displayName}");
+                
+                var container = new CuiElementContainer();
+                
+                // Simple test panel
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "1 0 0 0.8" },
+                    RectTransform = { AnchorMin = "0.3 0.3", AnchorMax = "0.7 0.7" },
+                    CursorEnabled = true
+                }, "Overlay", "TestUI");
+                
+                container.Add(new CuiLabel
+                {
+                    Text = { Text = "TEST UI - Plugin Working!", FontSize = 24, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+                    RectTransform = { AnchorMin = "0 0.4", AnchorMax = "1 0.6" }
+                }, "TestUI");
+                
+                container.Add(new CuiButton
+                {
+                    Button = { Close = "TestUI", Color = "0.8 0.2 0.2 1" },
+                    RectTransform = { AnchorMin = "0.35 0.2", AnchorMax = "0.65 0.35" },
+                    Text = { Text = "CLOSE", FontSize = 16, Align = TextAnchor.MiddleCenter }
+                }, "TestUI");
+                
+                CuiHelper.AddUi(player, container);
+                Puts($"[KillaUI] Test UI shown to {player.displayName} with {container.Count} elements");
+            }
+            catch (Exception ex)
+            {
+                PrintError($"Error in ShowTestUI: {ex}");
+            }
+        }
+        
+        /// <summary>
         /// Show lobby UI with specific tab
         /// </summary>
         public void ShowLobbyUIWithTab(BasePlayer player, string tab)
         {
-            if (player == null)
+            try
             {
-                PrintWarning("ShowLobbyUIWithTab: player is null");
-                return;
+                if (player == null)
+                {
+                    PrintWarning("ShowLobbyUIWithTab: player is null");
+                    return;
+                }
+                
+                if (KillaDome == null || !KillaDome.IsLoaded)
+                {
+                    PrintWarning($"ShowLobbyUIWithTab: KillaDome plugin not available for {player.displayName}");
+                    player.ChatMessage("KillaDome plugin not loaded. Please contact an admin.");
+                    return;
+                }
+                
+                LogDebug($"ShowLobbyUIWithTab called for {player.displayName}, tab: {tab}");
+                
+                DestroyUI(player);
+                
+                var container = new CuiElementContainer();
+                
+                // Main background
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "0 0 0 0.95" },
+                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+                    CursorEnabled = true
+                }, "Overlay", UI_MAIN);
+                
+                LogDebug($"Added main panel for {player.displayName}");
+                
+                // Title
+                container.Add(new CuiLabel
+                {
+                    Text = { Text = "KILLADOME", FontSize = 34, Align = TextAnchor.MiddleCenter, Color = "1 0.5 0 1" },
+                    RectTransform = { AnchorMin = "0.3 0.88", AnchorMax = "0.7 0.96" }
+                }, UI_MAIN);
+                
+                // Tab buttons
+                AddTabButton(container, UI_MAIN, "PLAY", 0, "killadome.tab play");
+                AddTabButton(container, UI_MAIN, "LOADOUTS", 1, "killadome.tab loadouts");
+                AddTabButton(container, UI_MAIN, "STORE", 2, "killadome.tab store");
+                AddTabButton(container, UI_MAIN, "STATS", 3, "killadome.tab stats");
+                AddTabButton(container, UI_MAIN, "SETTINGS", 4, "killadome.tab settings");
+                
+                LogDebug($"Added tab buttons for {player.displayName}");
+                
+                // Close button
+                container.Add(new CuiButton
+                {
+                    Button = { Color = "0.8 0.2 0.2 1", Command = "killadome.close" },
+                    RectTransform = { AnchorMin = "0.92 0.92", AnchorMax = "0.98 0.98" },
+                    Text = { Text = "X", FontSize = 20, Align = TextAnchor.MiddleCenter }
+                }, UI_MAIN);
+                
+                // Tab content container
+                container.Add(new CuiPanel
+                {
+                    Image = { Color = "0.1 0.1 0.1 0.9" },
+                    RectTransform = { AnchorMin = "0.1 0.08", AnchorMax = "0.9 0.78" }
+                }, UI_MAIN, UI_TAB_CONTAINER);
+                
+                LogDebug($"Added content container for {player.displayName}, about to show tab: {tab}");
+                
+                // Show appropriate tab content
+                switch (tab.ToLower())
+                {
+                    case "play":
+                        ShowPlayTab(container, player);
+                        break;
+                    case "loadouts":
+                        ShowLoadoutsTab(container, player);
+                        break;
+                    case "store":
+                        ShowStoreTab(container, player);
+                        break;
+                    case "stats":
+                        ShowStatsTab(container, player);
+                        break;
+                    case "settings":
+                        ShowSettingsTab(container, player);
+                        break;
+                    default:
+                        ShowPlayTab(container, player);
+                        break;
+                }
+                
+                LogDebug($"Tab content added for {player.displayName}, container has {container.Count} elements");
+                
+                CuiHelper.AddUi(player, container);
+                LogDebug($"UI added for {player.displayName}, elements count: {container.Count}");
+                Puts($"[KillaUI] Successfully rendered UI for {player.displayName} with {container.Count} elements");
             }
-            
-            if (KillaDome == null || !KillaDome.IsLoaded)
+            catch (Exception ex)
             {
-                PrintWarning($"ShowLobbyUIWithTab: KillaDome plugin not available for {player.displayName}");
-                player.ChatMessage("KillaDome plugin not loaded. Please contact an admin.");
-                return;
+                PrintError($"Error in ShowLobbyUIWithTab for {player?.displayName}: {ex}");
+                player?.ChatMessage($"Error showing UI: {ex.Message}");
             }
-            
-            LogDebug($"ShowLobbyUIWithTab called for {player.displayName}, tab: {tab}");
-            
-            DestroyUI(player);
-            
-            var container = new CuiElementContainer();
-            
-            // Main background
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0 0 0 0.95" },
-                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
-                CursorEnabled = true
-            }, "Overlay", UI_MAIN);
-            
-            // Title
-            container.Add(new CuiLabel
-            {
-                Text = { Text = "KILLADOME", FontSize = 34, Align = TextAnchor.MiddleCenter, Color = "1 0.5 0 1" },
-                RectTransform = { AnchorMin = "0.3 0.88", AnchorMax = "0.7 0.96" }
-            }, UI_MAIN);
-            
-            // Tab buttons
-            AddTabButton(container, UI_MAIN, "PLAY", 0, "killadome.tab play");
-            AddTabButton(container, UI_MAIN, "LOADOUTS", 1, "killadome.tab loadouts");
-            AddTabButton(container, UI_MAIN, "STORE", 2, "killadome.tab store");
-            AddTabButton(container, UI_MAIN, "STATS", 3, "killadome.tab stats");
-            AddTabButton(container, UI_MAIN, "SETTINGS", 4, "killadome.tab settings");
-            
-            // Close button
-            container.Add(new CuiButton
-            {
-                Button = { Color = "0.8 0.2 0.2 1", Command = "killadome.close" },
-                RectTransform = { AnchorMin = "0.92 0.92", AnchorMax = "0.98 0.98" },
-                Text = { Text = "X", FontSize = 20, Align = TextAnchor.MiddleCenter }
-            }, UI_MAIN);
-            
-            // Tab content container
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0.1 0.1 0.1 0.9" },
-                RectTransform = { AnchorMin = "0.1 0.08", AnchorMax = "0.9 0.78" }
-            }, UI_MAIN, UI_TAB_CONTAINER);
-            
-            // Show appropriate tab content
-            switch (tab.ToLower())
-            {
-                case "play":
-                    ShowPlayTab(container, player);
-                    break;
-                case "loadouts":
-                    ShowLoadoutsTab(container, player);
-                    break;
-                case "store":
-                    ShowStoreTab(container, player);
-                    break;
-                case "stats":
-                    ShowStatsTab(container, player);
-                    break;
-                case "settings":
-                    ShowSettingsTab(container, player);
-                    break;
-                default:
-                    ShowPlayTab(container, player);
-                    break;
-            }
-            
-            CuiHelper.AddUi(player, container);
-            LogDebug($"UI added for {player.displayName}, elements count: {container.Count}");
         }
         
         /// <summary>

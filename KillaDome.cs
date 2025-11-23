@@ -1033,6 +1033,7 @@ namespace Oxide.Plugins
             {
                 SendReply(player, "KillaDome Commands:\n" +
                     "/kd open - Open lobby UI\n" +
+                    "/kd test - Show test UI (debug)\n" +
                     "/kd stats - View your stats\n" +
                     "/kd help - Show this help");
                 return;
@@ -1043,12 +1044,22 @@ namespace Oxide.Plugins
                 case "open":
                     if (KillaUI != null && KillaUI.IsLoaded)
                     {
-                        KillaUI.Call("ShowLobbyUI", player);
-                        SendReply(player, "Lobby UI opened");
+                        try
+                        {
+                            var result = KillaUI.Call("ShowLobbyUI", player);
+                            SendReply(player, "Lobby UI opened");
+                            LogDebug($"ShowLobbyUI called successfully for {player.displayName}, result: {result}");
+                        }
+                        catch (Exception ex)
+                        {
+                            SendReply(player, $"Error opening UI: {ex.Message}");
+                            PrintError($"Error calling ShowLobbyUI: {ex}");
+                        }
                     }
                     else
                     {
                         SendReply(player, "KillaUI plugin not loaded");
+                        PrintWarning($"KillaUI plugin not available. KillaUI: {KillaUI}, IsLoaded: {KillaUI?.IsLoaded}");
                     }
                     break;
                     
@@ -1057,6 +1068,26 @@ namespace Oxide.Plugins
                     {
                         SendReply(player, $"Blood Tokens: {session.Profile.Tokens}\n" +
                             $"VIP Status: {(session.Profile.IsVIP ? "Active" : "Inactive")}");
+                    }
+                    break;
+                
+                case "test":
+                    if (KillaUI != null && KillaUI.IsLoaded)
+                    {
+                        try
+                        {
+                            KillaUI.Call("ShowTestUI", player);
+                            SendReply(player, "Test UI called");
+                        }
+                        catch (Exception ex)
+                        {
+                            SendReply(player, $"Error: {ex.Message}");
+                            PrintError($"Error calling ShowTestUI: {ex}");
+                        }
+                    }
+                    else
+                    {
+                        SendReply(player, "KillaUI plugin not loaded");
                     }
                     break;
                     
