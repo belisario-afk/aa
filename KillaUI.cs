@@ -74,25 +74,32 @@ namespace Oxide.Plugins
         /// <summary>
         /// Show lobby UI with default (Play) tab
         /// </summary>
+        [HookMethod("ShowLobbyUI")]
         public void ShowLobbyUI(BasePlayer player)
         {
+            Puts($"[KillaUI] ========== ShowLobbyUI CALLED ==========");
             ShowLobbyUIWithTab(player, "play");
         }
         
         /// <summary>
         /// Test method - shows a simple UI to verify plugin communication works
         /// </summary>
+        [HookMethod("ShowTestUI")]
         public void ShowTestUI(BasePlayer player)
         {
+            Puts($"[KillaUI] ========== ShowTestUI ENTRY POINT ==========");
+            Puts($"[KillaUI] ShowTestUI called with player: {player?.displayName}");
+            
             try
             {
                 if (player == null)
                 {
                     PrintWarning("ShowTestUI: player is null");
+                    Puts($"[KillaUI] ShowTestUI: player is null!");
                     return;
                 }
                 
-                Puts($"[KillaUI] ShowTestUI called for {player.displayName}");
+                Puts($"[KillaUI] ShowTestUI: Player is valid, creating UI...");
                 
                 var container = new CuiElementContainer();
                 
@@ -117,12 +124,17 @@ namespace Oxide.Plugins
                     Text = { Text = "CLOSE", FontSize = 16, Align = TextAnchor.MiddleCenter }
                 }, "TestUI");
                 
+                Puts($"[KillaUI] ShowTestUI: Container created with {container.Count} elements");
+                
                 CuiHelper.AddUi(player, container);
                 Puts($"[KillaUI] Test UI shown to {player.displayName} with {container.Count} elements");
+                Puts($"[KillaUI] ========== ShowTestUI COMPLETED ==========");
             }
             catch (Exception ex)
             {
-                PrintError($"Error in ShowTestUI: {ex}");
+                PrintError($"[KillaUI] Error in ShowTestUI: {ex}");
+                Puts($"[KillaUI] Exception details: {ex.Message}");
+                Puts($"[KillaUI] Stack trace: {ex.StackTrace}");
             }
         }
         

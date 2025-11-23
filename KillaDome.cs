@@ -1140,22 +1140,24 @@ namespace Oxide.Plugins
                         try
                         {
                             Puts($"[KillaDome] About to call ShowTestUI...");
+                            Puts($"[KillaDome] KillaUI type: {KillaUI.GetType().FullName}");
                             
-                            // Try direct method invocation
-                            var killaUIPlugin = KillaUI as dynamic;
-                            if (killaUIPlugin != null)
+                            // Get the actual plugin instance
+                            var killaUIInstance = plugins.Find("KillaUI");
+                            Puts($"[KillaDome] Found plugin instance: {killaUIInstance != null}");
+                            
+                            if (killaUIInstance != null)
                             {
-                                killaUIPlugin.ShowTestUI(player);
-                                Puts($"[KillaDome] ShowTestUI called directly");
-                                SendReply(player, "Test UI called (direct) - check for red panel");
+                                Puts($"[KillaDome] Calling via plugins.Find instance...");
+                                var result = killaUIInstance.Call("ShowTestUI", player);
+                                Puts($"[KillaDome] ShowTestUI via plugins.Find returned: {result}");
                             }
-                            else
-                            {
-                                // Fallback to Call
-                                var result = KillaUI.Call("ShowTestUI", player);
-                                Puts($"[KillaDome] ShowTestUI call returned: {result}");
-                                SendReply(player, "Test UI called - check console for details");
-                            }
+                            
+                            // Also try the reference
+                            var result2 = KillaUI.Call("ShowTestUI", player);
+                            Puts($"[KillaDome] ShowTestUI via reference returned: {result2}");
+                            
+                            SendReply(player, "Test UI called - check console and screen");
                         }
                         catch (Exception ex)
                         {
