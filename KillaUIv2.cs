@@ -861,7 +861,7 @@ namespace Oxide.Plugins
                 container.Add(new CuiLabel
                 {
                     Text = {
-                        Text = GetArmorDisplayName(currentArmorItem),
+                        Text = currentArmorItem.Replace(".", " ").Replace("_", " "),
                         FontSize = 11,
                         Align = TextAnchor.MiddleLeft,
                         Color = COLOR_TEXT
