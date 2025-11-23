@@ -522,6 +522,19 @@ namespace Oxide.Plugins
         
         private void OnServerInitialized()
         {
+            Puts("[KillaDome] OnServerInitialized called");
+            Puts($"[KillaDome] KillaUI reference is null: {KillaUI == null}");
+            Puts($"[KillaDome] KillaUI is loaded: {KillaUI?.IsLoaded}");
+            
+            if (KillaUI != null && KillaUI.IsLoaded)
+            {
+                Puts("[KillaDome] Successfully connected to KillaUI plugin");
+            }
+            else
+            {
+                PrintWarning("[KillaDome] KillaUI plugin not found or not loaded. UI features will not work.");
+            }
+            
             timer.Every(_config.AutoSaveInterval, () => AutoSaveAllPlayers());
             LogDebug("Auto-save timer started");
             
@@ -1033,7 +1046,8 @@ namespace Oxide.Plugins
             {
                 SendReply(player, "KillaDome Commands:\n" +
                     "/kd open - Open lobby UI\n" +
-                    "/kd test - Show test UI (debug)\n" +
+                    "/kd test - Test UI via KillaUI plugin (red)\n" +
+                    "/kd directtest - Test UI directly from KillaDome (green)\n" +
                     "/kd stats - View your stats\n" +
                     "/kd help - Show this help");
                 return;
@@ -1072,12 +1086,18 @@ namespace Oxide.Plugins
                     break;
                 
                 case "test":
+                    Puts($"[KillaDome] Test command called by {player.displayName}");
+                    Puts($"[KillaDome] KillaUI is null: {KillaUI == null}");
+                    Puts($"[KillaDome] KillaUI is loaded: {KillaUI?.IsLoaded}");
+                    
                     if (KillaUI != null && KillaUI.IsLoaded)
                     {
                         try
                         {
-                            KillaUI.Call("ShowTestUI", player);
-                            SendReply(player, "Test UI called");
+                            Puts($"[KillaDome] About to call ShowTestUI...");
+                            var result = KillaUI.Call("ShowTestUI", player);
+                            Puts($"[KillaDome] ShowTestUI call returned: {result}");
+                            SendReply(player, "Test UI called - check console for details");
                         }
                         catch (Exception ex)
                         {
@@ -1088,12 +1108,51 @@ namespace Oxide.Plugins
                     else
                     {
                         SendReply(player, "KillaUI plugin not loaded");
+                        Puts($"[KillaDome] KillaUI plugin not available");
                     }
                     break;
                     
                 case "help":
                     SendReply(player, "KillaDome - Full COD Experience\n" +
                         "Use /kd open to access the lobby");
+                    break;
+                
+                case "directtest":
+                    // Direct UI test without plugin communication
+                    try
+                    {
+                        Puts($"[KillaDome] Direct test UI for {player.displayName}");
+                        var container = new CuiElementContainer();
+                        
+                        container.Add(new CuiPanel
+                        {
+                            Image = { Color = "0 1 0 0.8" },
+                            RectTransform = { AnchorMin = "0.3 0.3", AnchorMax = "0.7 0.7" },
+                            CursorEnabled = true
+                        }, "Overlay", "DirectTestUI");
+                        
+                        container.Add(new CuiLabel
+                        {
+                            Text = { Text = "DIRECT TEST - KillaDome", FontSize = 24, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+                            RectTransform = { AnchorMin = "0 0.4", AnchorMax = "1 0.6" }
+                        }, "DirectTestUI");
+                        
+                        container.Add(new CuiButton
+                        {
+                            Button = { Close = "DirectTestUI", Color = "0.2 0.8 0.2 1" },
+                            RectTransform = { AnchorMin = "0.35 0.2", AnchorMax = "0.65 0.35" },
+                            Text = { Text = "CLOSE", FontSize = 16, Align = TextAnchor.MiddleCenter }
+                        }, "DirectTestUI");
+                        
+                        CuiHelper.AddUi(player, container);
+                        Puts($"[KillaDome] Direct test UI shown with {container.Count} elements");
+                        SendReply(player, "Direct test UI shown (green panel)");
+                    }
+                    catch (Exception ex)
+                    {
+                        PrintError($"Error in direct test: {ex}");
+                        SendReply(player, $"Direct test error: {ex.Message}");
+                    }
                     break;
                     
                 default:
