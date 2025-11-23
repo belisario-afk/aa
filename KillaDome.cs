@@ -1105,8 +1105,11 @@ namespace Oxide.Plugins
             var session = GetSession(steamId);
             if (session == null)
             {
+                var player = BasePlayer.FindByID(steamId);
+                if (player == null) return false; // Player must be online
+                
                 var profile = _saveManager.LoadPlayerProfile(steamId);
-                session = new PlayerSession(BasePlayer.FindByID(steamId), profile);
+                session = new PlayerSession(player, profile);
                 _activeSessions[steamId] = session;
             }
             
@@ -1132,8 +1135,11 @@ namespace Oxide.Plugins
             var session = GetSession(steamId);
             if (session == null)
             {
+                var player = BasePlayer.FindByID(steamId);
+                if (player == null) return false; // Player must be online
+                
                 var profile = _saveManager.LoadPlayerProfile(steamId);
-                session = new PlayerSession(BasePlayer.FindByID(steamId), profile);
+                session = new PlayerSession(player, profile);
                 _activeSessions[steamId] = session;
             }
             

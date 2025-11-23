@@ -1072,7 +1072,6 @@ namespace Oxide.Plugins
         #region Helper Methods
         
         private Dictionary<ulong, DateTime> _rateLimitCache = new Dictionary<ulong, DateTime>();
-        private const int RATE_LIMIT_CLEANUP_INTERVAL = 300; // 5 minutes in seconds
         
         private bool CheckRateLimit(ulong steamId)
         {
@@ -1097,9 +1096,18 @@ namespace Oxide.Plugins
         
         private void CleanupRateLimitCache()
         {
-            // Remove entries older than 1 minute
+            // Remove entries older than 1 minute for memory efficiency
             var cutoff = DateTime.UtcNow.AddMinutes(-1);
-            var keysToRemove = _rateLimitCache.Where(kvp => kvp.Value < cutoff).Select(kvp => kvp.Key).ToList();
+            var keysToRemove = new List<ulong>();
+            
+            foreach (var kvp in _rateLimitCache)
+            {
+                if (kvp.Value < cutoff)
+                {
+                    keysToRemove.Add(kvp.Key);
+                }
+            }
+            
             foreach (var key in keysToRemove)
             {
                 _rateLimitCache.Remove(key);
